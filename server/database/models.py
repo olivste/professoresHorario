@@ -2,13 +2,13 @@ from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text, Bool
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import enum
-from .database import Base
+from server.database.database import Base
 
 class UserRole(enum.Enum):
-    DIRETOR = "diretor"
-    PEDAGOGO = "pedagogo"
-    COORDENADOR = "coordenador"
-    PROFESSOR = "professor"
+    DIRETOR = "DIRETOR"
+    PEDAGOGO = "PEDAGOGO"
+    COORDENADOR = "COORDENADOR"
+    PROFESSOR = "PROFESSOR"
 
 class TurnoEnum(enum.Enum):
     MATUTINO = "matutino"
@@ -31,6 +31,22 @@ class StatusReservaEnum(enum.Enum):
     REJEITADA = "rejeitada"
     CANCELADA = "cancelada"
 
+class Turno(Base):
+    __tablename__ = "turnos"
+
+    id = Column(Integer, primary_key=True, index=True)
+    nome = Column(String(50), nullable=False, unique=True)
+    hora_inicio = Column(Time, nullable=False)
+    hora_fim = Column(Time, nullable=False)
+    descricao = Column(Text)
+    ativo = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    # Relacionamentos
+    turmas = relationship("Turma", back_populates="turno")
+    horarios = relationship("Horario", back_populates="turno")
+
 class Usuario(Base):
     __tablename__ = "usuarios"
 
@@ -46,7 +62,7 @@ class Usuario(Base):
 
     # Relacionamentos
     professor = relationship("Professor", back_populates="usuario", uselist=False)
-    reservas = relationship("ReservaEspaco", back_populates="solicitante")
+    reservas = relationship("ReservaEspaco", back_populates="solicitante", foreign_keys="ReservaEspaco.solicitante_id")
 
 class Professor(Base):
     __tablename__ = "professores"
@@ -71,13 +87,14 @@ class Turma(Base):
     id = Column(Integer, primary_key=True, index=True)
     nome = Column(String(50), nullable=False)  # Ex: 1°M01, 2°V01
     ano = Column(String(10), nullable=False)   # 1°, 2°, 3°
-    turno = Column(Enum(TurnoEnum), nullable=False)
+    turno_id = Column(Integer, ForeignKey("turnos.id"), nullable=False)
     curso = Column(String(100))  # Ex: Ensino Médio, Técnico em Informática
     ativa = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     # Relacionamentos
+    turno = relationship("Turno", back_populates="turmas")
     horarios = relationship("Horario", back_populates="turma")
 
 class Disciplina(Base):
@@ -116,6 +133,7 @@ class Horario(Base):
     professor_id = Column(Integer, ForeignKey("professores.id"), nullable=False)
     disciplina_id = Column(Integer, ForeignKey("disciplinas.id"), nullable=False)
     turma_id = Column(Integer, ForeignKey("turmas.id"), nullable=False)
+    turno_id = Column(Integer, ForeignKey("turnos.id"), nullable=False)
     dia_semana = Column(Enum(DiaSemanaEnum), nullable=False)
     hora_inicio = Column(Time, nullable=False)
     hora_fim = Column(Time, nullable=False)
@@ -128,6 +146,7 @@ class Horario(Base):
     professor = relationship("Professor", back_populates="horarios")
     disciplina = relationship("Disciplina", back_populates="horarios")
     turma = relationship("Turma", back_populates="horarios")
+    turno = relationship("Turno", back_populates="horarios")
 
 class EspacoEscola(Base):
     __tablename__ = "espacos_escola"

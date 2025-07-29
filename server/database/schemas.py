@@ -5,10 +5,10 @@ from enum import Enum
 
 # Enums
 class UserRole(str, Enum):
-    DIRETOR = "diretor"
-    PEDAGOGO = "pedagogo"
-    COORDENADOR = "coordenador"
-    PROFESSOR = "professor"
+    DIRETOR = "DIRETOR"
+    PEDAGOGO = "PEDAGOGO"
+    COORDENADOR = "COORDENADOR"
+    PROFESSOR = "PROFESSOR"
 
 class TurnoEnum(str, Enum):
     MATUTINO = "matutino"
@@ -30,6 +30,32 @@ class StatusReservaEnum(str, Enum):
     APROVADA = "aprovada"
     REJEITADA = "rejeitada"
     CANCELADA = "cancelada"
+
+# Turno schemas
+class TurnoBase(BaseModel):
+    nome: str
+    hora_inicio: time
+    hora_fim: time
+    descricao: Optional[str] = None
+    ativo: bool = True
+
+class TurnoCreate(TurnoBase):
+    pass
+
+class TurnoUpdate(BaseModel):
+    nome: Optional[str] = None
+    hora_inicio: Optional[time] = None
+    hora_fim: Optional[time] = None
+    descricao: Optional[str] = None
+    ativo: Optional[bool] = None
+
+class Turno(TurnoBase):
+    id: int
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
 
 # Usuario schemas
 class UsuarioBase(BaseModel):
@@ -111,7 +137,7 @@ class Disciplina(DisciplinaBase):
 class TurmaBase(BaseModel):
     nome: str
     ano: str
-    turno: TurnoEnum
+    turno_id: int
     curso: Optional[str] = None
     ativa: bool = True
 
@@ -121,7 +147,7 @@ class TurmaCreate(TurmaBase):
 class TurmaUpdate(BaseModel):
     nome: Optional[str] = None
     ano: Optional[str] = None
-    turno: Optional[TurnoEnum] = None
+    turno_id: Optional[int] = None
     curso: Optional[str] = None
     ativa: Optional[bool] = None
 
@@ -129,6 +155,7 @@ class Turma(TurmaBase):
     id: int
     created_at: datetime
     updated_at: Optional[datetime] = None
+    turno: Turno
 
     class Config:
         from_attributes = True
@@ -156,6 +183,7 @@ class HorarioBase(BaseModel):
     professor_id: int
     disciplina_id: int
     turma_id: int
+    turno_id: int
     dia_semana: DiaSemanaEnum
     hora_inicio: time
     hora_fim: time
@@ -169,6 +197,7 @@ class HorarioUpdate(BaseModel):
     professor_id: Optional[int] = None
     disciplina_id: Optional[int] = None
     turma_id: Optional[int] = None
+    turno_id: Optional[int] = None
     dia_semana: Optional[DiaSemanaEnum] = None
     hora_inicio: Optional[time] = None
     hora_fim: Optional[time] = None
@@ -182,6 +211,7 @@ class Horario(HorarioBase):
     professor: Professor
     disciplina: Disciplina
     turma: Turma
+    turno: Turno
 
     class Config:
         from_attributes = True
@@ -251,3 +281,18 @@ class ReservaEspaco(ReservaEspacoBase):
 # Update forward references
 Professor.model_rebuild()
 Horario.model_rebuild()
+
+# ================================
+# SCHEMAS DE AUTENTICAÇÃO
+# ================================
+
+class LoginRequest(BaseModel):
+    email: EmailStr
+    senha: str
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+class TokenData(BaseModel):
+    email: Optional[str] = None

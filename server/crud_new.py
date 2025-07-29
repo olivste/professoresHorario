@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, func
-from . import models, schemas
+from server.database import models, schemas
 from typing import Optional, List
 from datetime import date, time
 from passlib.context import CryptContext
@@ -13,6 +13,42 @@ def hash_password(password: str) -> str:
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
+
+# Turno CRUD operations
+def get_turno(db: Session, turno_id: int):
+    return db.query(models.Turno).filter(models.Turno.id == turno_id).first()
+
+def get_turnos(db: Session, skip: int = 0, limit: int = 100, ativos_apenas: bool = True):
+    query = db.query(models.Turno)
+    if ativos_apenas:
+        query = query.filter(models.Turno.ativo == True)
+    return query.offset(skip).limit(limit).all()
+
+def create_turno(db: Session, turno: schemas.TurnoCreate):
+    db_turno = models.Turno(**turno.model_dump())
+    db.add(db_turno)
+    db.commit()
+    db.refresh(db_turno)
+    return db_turno
+
+def update_turno(db: Session, turno_id: int, turno: schemas.TurnoUpdate):
+    db_turno = db.query(models.Turno).filter(models.Turno.id == turno_id).first()
+    if db_turno:
+        update_data = turno.model_dump(exclude_unset=True)
+        for field, value in update_data.items():
+            setattr(db_turno, field, value)
+        db.commit()
+        db.refresh(db_turno)
+    return db_turno
+
+def delete_turno(db: Session, turno_id: int):
+    """Desativa um turno (soft delete)"""
+    db_turno = db.query(models.Turno).filter(models.Turno.id == turno_id).first()
+    if db_turno:
+        db_turno.ativo = False
+        db.commit()
+        return True
+    return False
 
 # Usuario CRUD operations
 def get_usuario(db: Session, usuario_id: int):
@@ -290,3 +326,52 @@ def verificar_conflito_reserva(db: Session, espaco_id: int, data_reserva: date,
         query = query.filter(models.ReservaEspaco.id != reserva_id)
     
     return query.first() is not None
+
+# ================================
+# FUNÇÕES DE DELETE ADICIONAIS
+# ================================
+
+def delete_usuario(db: Session, usuario_id: int):
+    """Desativa um usuário (soft delete)"""
+    db_usuario = db.query(models.Usuario).filter(models.Usuario.id == usuario_id).first()
+    if db_usuario:
+        db_usuario.ativo = False
+        db.commit()
+        return True
+    return False
+
+def delete_disciplina(db: Session, disciplina_id: int):
+    """Desativa uma disciplina (soft delete)"""
+    db_disciplina = db.query(models.Disciplina).filter(models.Disciplina.id == disciplina_id).first()
+    if db_disciplina:
+        db_disciplina.ativa = False
+        db.commit()
+        return True
+    return False
+
+def delete_turma(db: Session, turma_id: int):
+    """Remove uma turma (hard delete, cuidado com relacionamentos)"""
+    db_turma = db.query(models.Turma).filter(models.Turma.id == turma_id).first()
+    if db_turma:
+        db.delete(db_turma)
+        db.commit()
+        return True
+    return False
+
+def delete_espaco_escola(db: Session, espaco_id: int):
+    """Remove um espaço escolar (hard delete)"""
+    db_espaco = db.query(models.EspacoEscola).filter(models.EspacoEscola.id == espaco_id).first()
+    if db_espaco:
+        db.delete(db_espaco)
+        db.commit()
+        return True
+    return False
+
+def delete_reserva_espaco(db: Session, reserva_id: int):
+    """Remove uma reserva de espaço"""
+    db_reserva = db.query(models.ReservaEspaco).filter(models.ReservaEspaco.id == reserva_id).first()
+    if db_reserva:
+        db.delete(db_reserva)
+        db.commit()
+        return True
+    return False
