@@ -52,8 +52,8 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-def authenticate_user(db: Session, email: str, password: str):
-    user = crud.get_usuario_by_email(db, email)
+def authenticate_user(db: Session, username: str, password: str):
+    user = db.query(models.Usuario).filter(models.Usuario.username == username).first()
     if not user:
         return False
     if not verify_password(password, user.senha_hash):
@@ -68,13 +68,13 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
     )
     try:
         payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
-        email: str = payload.get("sub")
-        if email is None:
+        username: str = payload.get("sub")
+        if username is None:
             raise credentials_exception
     except JWTError:
         raise credentials_exception
     
-    user = crud.get_usuario_by_email(db, email=email)
+    user = db.query(models.Usuario).filter(models.Usuario.username == username).first()
     if user is None:
         raise credentials_exception
     return user
@@ -86,16 +86,16 @@ def get_current_active_user(current_user: models.Usuario = Depends(get_current_u
 
 @router.post("/login", response_model=schemas.Token)
 def login_for_access_token(login_data: schemas.LoginRequest, db: Session = Depends(get_db)):
-    user = authenticate_user(db, login_data.email, login_data.senha)
+    user = authenticate_user(db, login_data.username, login_data.senha)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Email ou senha incorretos",
+            detail="Nome de usuário ou senha incorretos",
             headers={"WWW-Authenticate": "Bearer"},
         )
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": user.email}, expires_delta=access_token_expires
+        data={"sub": user.username}, expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer"}
 

@@ -1,0 +1,1027 @@
+{
+  "info": {
+    "_postman_id": "1e7a0c53-5e8a-4557-b9e9-a22d0c97a11d",
+    "name": "ProfessoresHorario",
+    "description": "API para gerenciamento de horários de professores, turmas e turnos em uma instituição educacional.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Autenticação",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"username\": \"admin\",\n    \"senha\": \"admin123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Autentica um usuário e retorna um token de acesso."
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints relacionados à autenticação de usuários."
+    },
+    {
+      "name": "Usuários",
+      "item": [
+        {
+          "name": "Listar Usuários",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/usuarios",
+              "host": ["{{baseUrl}}"],
+              "path": ["usuarios"]
+            },
+            "description": "Lista todos os usuários cadastrados."
+          },
+          "response": []
+        },
+        {
+          "name": "Criar Usuário",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"nome\": \"Novo Usuário\",\n    \"username\": \"novo.usuario\",\n    \"senha\": \"senha123\",\n    \"role\": \"PROFESSOR\",\n    \"ativo\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/usuarios",
+              "host": ["{{baseUrl}}"],
+              "path": ["usuarios"]
+            },
+            "description": "Cria um novo usuário."
+          },
+          "response": []
+        },
+        {
+          "name": "Obter Usuário por ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/usuarios/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["usuarios", "1"]
+            },
+            "description": "Obtém os detalhes de um usuário pelo ID."
+          },
+          "response": []
+        },
+        {
+          "name": "Atualizar Usuário",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"nome\": \"Usuário Atualizado\",\n    \"telefone\": \"(11) 91234-5678\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/usuarios/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["usuarios", "1"]
+            },
+            "description": "Atualiza os dados de um usuário existente."
+          },
+          "response": []
+        },
+        {
+          "name": "Excluir Usuário",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/usuarios/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["usuarios", "1"]
+            },
+            "description": "Remove um usuário do sistema."
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints para gerenciar usuários do sistema."
+    },
+    {
+      "name": "Professores",
+      "item": [
+        {
+          "name": "Listar Professores",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/professores",
+              "host": ["{{baseUrl}}"],
+              "path": ["professores"]
+            },
+            "description": "Lista todos os professores cadastrados."
+          },
+          "response": []
+        },
+        {
+          "name": "Criar Professor",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"departamento\": \"Matemática\",\n    \"especializacao\": \"Cálculo\",\n    \"carga_horaria_semanal\": 40,\n    \"observacoes\": \"Disponível para aulas no período matutino e vespertino\",\n    \"usuario\": {\n        \"nome\": \"Professor Novo\",\n        \"email\": \"prof.novo@example.com\",\n        \"senha\": \"senha123\",\n        \"telefone\": \"(11) 98765-4321\",\n        \"role\": \"PROFESSOR\",\n        \"ativo\": true\n    }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/professores",
+              "host": ["{{baseUrl}}"],
+              "path": ["professores"]
+            },
+            "description": "Cadastra um novo professor no sistema."
+          },
+          "response": []
+        },
+        {
+          "name": "Obter Professor por ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/professores/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["professores", "1"]
+            },
+            "description": "Obtém os detalhes de um professor pelo ID."
+          },
+          "response": []
+        },
+        {
+          "name": "Atualizar Professor",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"departamento\": \"Matemática Avançada\",\n    \"especializacao\": \"Cálculo e Álgebra Linear\",\n    \"carga_horaria_semanal\": 30,\n    \"observacoes\": \"Disponível apenas para o período matutino\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/professores/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["professores", "1"]
+            },
+            "description": "Atualiza os dados de um professor existente."
+          },
+          "response": []
+        },
+        {
+          "name": "Excluir Professor",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/professores/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["professores", "1"]
+            },
+            "description": "Remove um professor do sistema."
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints para gerenciar professores da instituição."
+    },
+    {
+      "name": "Turnos",
+      "item": [
+        {
+          "name": "Listar Turnos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/turnos",
+              "host": ["{{baseUrl}}"],
+              "path": ["turnos"]
+            },
+            "description": "Lista todos os turnos cadastrados."
+          },
+          "response": []
+        },
+        {
+          "name": "Criar Turno",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"nome\": \"Matutino\",\n    \"hora_inicio\": \"07:30:00\",\n    \"hora_fim\": \"12:20:00\",\n    \"descricao\": \"Turno da manhã\",\n    \"ativo\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/turnos",
+              "host": ["{{baseUrl}}"],
+              "path": ["turnos"]
+            },
+            "description": "Cria um novo turno."
+          },
+          "response": []
+        },
+        {
+          "name": "Obter Turno por ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/turnos/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["turnos", "1"]
+            },
+            "description": "Obtém os detalhes de um turno pelo ID."
+          },
+          "response": []
+        },
+        {
+          "name": "Atualizar Turno",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"hora_inicio\": \"07:15:00\",\n    \"hora_fim\": \"12:10:00\",\n    \"descricao\": \"Turno matutino atualizado\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/turnos/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["turnos", "1"]
+            },
+            "description": "Atualiza os dados de um turno existente."
+          },
+          "response": []
+        },
+        {
+          "name": "Excluir Turno",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/turnos/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["turnos", "1"]
+            },
+            "description": "Remove um turno do sistema."
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints para gerenciar turnos da instituição."
+    },
+    {
+      "name": "Períodos de Aula",
+      "item": [
+        {
+          "name": "Listar Períodos de Aula",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/periodos-aula?turno_id=1&turma_id=&tipo=",
+              "host": ["{{baseUrl}}"],
+              "path": ["periodos-aula"],
+              "query": [
+                {
+                  "key": "turno_id",
+                  "value": "1"
+                },
+                {
+                  "key": "turma_id",
+                  "value": ""
+                },
+                {
+                  "key": "tipo",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Lista os períodos de aula com filtros opcionais por turno, turma e tipo."
+          },
+          "response": []
+        },
+        {
+          "name": "Criar Período de Aula",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"turno_id\": 1,\n    \"turma_id\": null,\n    \"numero_aula\": 1,\n    \"hora_inicio\": \"07:30:00\",\n    \"hora_fim\": \"08:20:00\",\n    \"tipo\": \"AULA\",\n    \"descricao\": \"1ª Aula\",\n    \"ativo\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/periodos-aula",
+              "host": ["{{baseUrl}}"],
+              "path": ["periodos-aula"]
+            },
+            "description": "Cria um novo período de aula."
+          },
+          "response": []
+        },
+        {
+          "name": "Auto-Gerar Períodos de Aula",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/periodos-aula/auto-gerar?turno_id=1&quantidade_aulas=5&duracao_aula_minutos=50&intervalo_minutos=20&horario_intervalo=2&descricao_intervalo=Intervalo&turma_id=",
+              "host": ["{{baseUrl}}"],
+              "path": ["periodos-aula", "auto-gerar"],
+              "query": [
+                {
+                  "key": "turno_id",
+                  "value": "1"
+                },
+                {
+                  "key": "quantidade_aulas",
+                  "value": "5"
+                },
+                {
+                  "key": "duracao_aula_minutos",
+                  "value": "50"
+                },
+                {
+                  "key": "intervalo_minutos",
+                  "value": "20"
+                },
+                {
+                  "key": "horario_intervalo",
+                  "value": "2"
+                },
+                {
+                  "key": "descricao_intervalo",
+                  "value": "Intervalo"
+                },
+                {
+                  "key": "turma_id",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Gera automaticamente períodos de aula para um turno com base nos parâmetros fornecidos."
+          },
+          "response": []
+        },
+        {
+          "name": "Clonar Períodos de Aula",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/periodos-aula/clonar?turno_origem_id=1&turno_destino_id=&turma_destino_id=2",
+              "host": ["{{baseUrl}}"],
+              "path": ["periodos-aula", "clonar"],
+              "query": [
+                {
+                  "key": "turno_origem_id",
+                  "value": "1"
+                },
+                {
+                  "key": "turno_destino_id",
+                  "value": ""
+                },
+                {
+                  "key": "turma_destino_id",
+                  "value": "2"
+                }
+              ]
+            },
+            "description": "Clona os períodos de aula de um turno para outro turno ou para uma turma específica."
+          },
+          "response": []
+        },
+        {
+          "name": "Criar Múltiplos Períodos de Aula",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n    {\n        \"turno_id\": 1,\n        \"turma_id\": 2,\n        \"numero_aula\": 1,\n        \"hora_inicio\": \"07:30:00\",\n        \"hora_fim\": \"08:20:00\",\n        \"tipo\": \"AULA\",\n        \"descricao\": \"1ª Aula\"\n    },\n    {\n        \"turno_id\": 1,\n        \"turma_id\": 2,\n        \"numero_aula\": 0,\n        \"hora_inicio\": \"08:20:00\",\n        \"hora_fim\": \"08:40:00\",\n        \"tipo\": \"INTERVALO\",\n        \"descricao\": \"Intervalo\"\n    },\n    {\n        \"turno_id\": 1,\n        \"turma_id\": 2,\n        \"numero_aula\": 2,\n        \"hora_inicio\": \"08:40:00\",\n        \"hora_fim\": \"09:30:00\",\n        \"tipo\": \"AULA\",\n        \"descricao\": \"2ª Aula\"\n    }\n]"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/periodos-aula/batch",
+              "host": ["{{baseUrl}}"],
+              "path": ["periodos-aula", "batch"]
+            },
+            "description": "Cria múltiplos períodos de aula de uma vez."
+          },
+          "response": []
+        },
+        {
+          "name": "Obter Período de Aula por ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/periodos-aula/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["periodos-aula", "1"]
+            },
+            "description": "Obtém os detalhes de um período de aula pelo ID."
+          },
+          "response": []
+        },
+        {
+          "name": "Atualizar Período de Aula",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"hora_inicio\": \"07:35:00\",\n    \"hora_fim\": \"08:25:00\",\n    \"descricao\": \"1ª Aula (Atualizada)\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/periodos-aula/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["periodos-aula", "1"]
+            },
+            "description": "Atualiza os dados de um período de aula existente."
+          },
+          "response": []
+        },
+        {
+          "name": "Excluir Período de Aula",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/periodos-aula/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["periodos-aula", "1"]
+            },
+            "description": "Remove um período de aula do sistema."
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints para gerenciar períodos de aula."
+    },
+    {
+      "name": "Turmas",
+      "item": [
+        {
+          "name": "Listar Turmas",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/turmas",
+              "host": ["{{baseUrl}}"],
+              "path": ["turmas"]
+            },
+            "description": "Lista todas as turmas cadastradas."
+          },
+          "response": []
+        },
+        {
+          "name": "Criar Turma",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"nome\": \"1º Ano A\",\n    \"ano\": \"1º\",\n    \"turno_id\": 1,\n    \"curso\": \"Ensino Médio\",\n    \"ativa\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/turmas",
+              "host": ["{{baseUrl}}"],
+              "path": ["turmas"]
+            },
+            "description": "Cria uma nova turma."
+          },
+          "response": []
+        },
+        {
+          "name": "Obter Turma por ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/turmas/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["turmas", "1"]
+            },
+            "description": "Obtém os detalhes de uma turma pelo ID."
+          },
+          "response": []
+        },
+        {
+          "name": "Atualizar Turma",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"nome\": \"1º Ano A - Turma Avançada\",\n    \"curso\": \"Ensino Médio Técnico\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/turmas/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["turmas", "1"]
+            },
+            "description": "Atualiza os dados de uma turma existente."
+          },
+          "response": []
+        },
+        {
+          "name": "Excluir Turma",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/turmas/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["turmas", "1"]
+            },
+            "description": "Remove uma turma do sistema."
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints para gerenciar turmas."
+    },
+    {
+      "name": "Disciplinas",
+      "item": [
+        {
+          "name": "Listar Disciplinas",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/disciplinas",
+              "host": ["{{baseUrl}}"],
+              "path": ["disciplinas"]
+            },
+            "description": "Lista todas as disciplinas cadastradas."
+          },
+          "response": []
+        },
+        {
+          "name": "Criar Disciplina",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"nome\": \"Matemática\",\n    \"codigo\": \"MAT001\",\n    \"carga_horaria_semanal\": 5,\n    \"descricao\": \"Matemática básica e aplicada\",\n    \"ativa\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/disciplinas",
+              "host": ["{{baseUrl}}"],
+              "path": ["disciplinas"]
+            },
+            "description": "Cria uma nova disciplina."
+          },
+          "response": []
+        },
+        {
+          "name": "Obter Disciplina por ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/disciplinas/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["disciplinas", "1"]
+            },
+            "description": "Obtém os detalhes de uma disciplina pelo ID."
+          },
+          "response": []
+        },
+        {
+          "name": "Atualizar Disciplina",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"nome\": \"Matemática Avançada\",\n    \"carga_horaria_semanal\": 6,\n    \"descricao\": \"Matemática avançada incluindo cálculo\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/disciplinas/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["disciplinas", "1"]
+            },
+            "description": "Atualiza os dados de uma disciplina existente."
+          },
+          "response": []
+        },
+        {
+          "name": "Excluir Disciplina",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/disciplinas/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["disciplinas", "1"]
+            },
+            "description": "Remove uma disciplina do sistema."
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints para gerenciar disciplinas."
+    },
+    {
+      "name": "Horários",
+      "item": [
+        {
+          "name": "Listar Horários",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/horarios?professor_id=&turma_id=&turno_id=&dia_semana=",
+              "host": ["{{baseUrl}}"],
+              "path": ["horarios"],
+              "query": [
+                {
+                  "key": "professor_id",
+                  "value": ""
+                },
+                {
+                  "key": "turma_id",
+                  "value": ""
+                },
+                {
+                  "key": "turno_id",
+                  "value": ""
+                },
+                {
+                  "key": "dia_semana",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Lista todos os horários com filtros opcionais."
+          },
+          "response": []
+        },
+        {
+          "name": "Criar Horário",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"professor_id\": 1,\n    \"disciplina_id\": 1,\n    \"turma_id\": 1,\n    \"turno_id\": 1,\n    \"dia_semana\": \"segunda\",\n    \"hora_inicio\": \"07:30:00\",\n    \"hora_fim\": \"08:20:00\",\n    \"sala\": \"Sala 101\",\n    \"observacoes\": \"Aula de Matemática\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/horarios",
+              "host": ["{{baseUrl}}"],
+              "path": ["horarios"]
+            },
+            "description": "Cria um novo horário."
+          },
+          "response": []
+        },
+        {
+          "name": "Obter Horário por ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/horarios/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["horarios", "1"]
+            },
+            "description": "Obtém os detalhes de um horário pelo ID."
+          },
+          "response": []
+        },
+        {
+          "name": "Atualizar Horário",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"sala\": \"Sala 102\",\n    \"observacoes\": \"Aula de Matemática (atualizada)\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/horarios/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["horarios", "1"]
+            },
+            "description": "Atualiza os dados de um horário existente."
+          },
+          "response": []
+        },
+        {
+          "name": "Excluir Horário",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/horarios/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["horarios", "1"]
+            },
+            "description": "Remove um horário do sistema."
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints para gerenciar horários de aulas."
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [""]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [""]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "seu_token_aqui",
+      "type": "string"
+    }
+  ]
+}

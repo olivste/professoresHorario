@@ -8,6 +8,43 @@ from routes import auth, usuarios, professores, disciplinas, turmas, horarios, e
 # Create database tables
 models.Base.metadata.create_all(bind=engine)
 
+# Função para criar o usuário administrador se ele não existir
+def create_admin_user():
+    from database.database import SessionLocal
+    from routes.auth import get_password_hash
+    
+    db = SessionLocal()
+    try:
+        # Verificar se o usuário admin já existe
+        admin_user = db.query(models.Usuario).filter(models.Usuario.username == "admin").first()
+        
+        if not admin_user:
+            # Criar um novo usuário administrador
+            print("Criando usuário administrador padrão...")
+            hashed_password = get_password_hash("admin123")
+            
+            new_admin = models.Usuario(
+                nome="Administrador",
+                username="admin",
+                senha_hash=hashed_password,
+                role=models.UserRole.DIRETOR,
+                ativo=True
+            )
+            
+            db.add(new_admin)
+            db.commit()
+            print("Usuário administrador criado com sucesso!")
+        else:
+            print("Usuário administrador já existe!")
+    except Exception as e:
+        print(f"Erro ao criar usuário administrador: {e}")
+        db.rollback()
+    finally:
+        db.close()
+
+# Chamar a função para criar o admin
+create_admin_user()
+
 app = FastAPI(
     title="Sistema de Gestão Escolar - Professores e Horários",
     description="Sistema completo para gestão de professores, horários, disciplinas e reservas de espaços escolares",

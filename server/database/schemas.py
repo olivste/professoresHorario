@@ -117,8 +117,7 @@ class PeriodoAula(PeriodoAulaBase):
 # Usuario schemas
 class UsuarioBase(BaseModel):
     nome: str
-    email: EmailStr
-    telefone: Optional[str] = None
+    username: str
     role: UserRole = UserRole.PROFESSOR
     ativo: bool = True
 
@@ -348,7 +347,7 @@ Turma.model_rebuild()
 # ================================
 
 class LoginRequest(BaseModel):
-    email: EmailStr
+    username: str
     senha: str
 
 class Token(BaseModel):
