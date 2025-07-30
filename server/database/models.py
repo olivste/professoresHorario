@@ -1,8 +1,8 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text, Boolean, Enum, Time, Date
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text, Boolean, Enum, Time, Date, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import enum
-from server.database.database import Base
+from database.database import Base
 
 class UserRole(enum.Enum):
     DIRETOR = "DIRETOR"
@@ -31,6 +31,13 @@ class StatusReservaEnum(enum.Enum):
     REJEITADA = "rejeitada"
     CANCELADA = "cancelada"
 
+class TipoPeriodoEnum(enum.Enum):
+    AULA = "AULA"
+    INTERVALO = "INTERVALO"
+    ALMOCO = "ALMOCO"
+    RECREIO = "RECREIO"
+    OUTRO = "OUTRO"
+
 class Turno(Base):
     __tablename__ = "turnos"
 
@@ -46,6 +53,31 @@ class Turno(Base):
     # Relacionamentos
     turmas = relationship("Turma", back_populates="turno")
     horarios = relationship("Horario", back_populates="turno")
+    periodos_aula = relationship("PeriodoAula", back_populates="turno", cascade="all, delete-orphan")
+
+class PeriodoAula(Base):
+    __tablename__ = "periodos_aula"
+
+    id = Column(Integer, primary_key=True, index=True)
+    turno_id = Column(Integer, ForeignKey("turnos.id"), nullable=False)
+    turma_id = Column(Integer, ForeignKey("turmas.id"), nullable=True)  # Opcional: permite períodos específicos por turma
+    numero_aula = Column(Integer, nullable=False)  # 1ª aula, 2ª aula, etc.
+    hora_inicio = Column(Time, nullable=False)
+    hora_fim = Column(Time, nullable=False)
+    tipo = Column(Enum(TipoPeriodoEnum), nullable=False, default=TipoPeriodoEnum.AULA)  # Tipo de período: aula ou intervalo
+    descricao = Column(Text)  # Ex: "Intervalo", "Almoço", etc.
+    ativo = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    # Relacionamentos
+    turno = relationship("Turno", back_populates="periodos_aula")
+    turma = relationship("Turma", back_populates="periodos_aula")
+
+    # Garantir que a combinação de turno_id, turma_id (quando não nulo) e numero_aula seja única
+    __table_args__ = (
+        UniqueConstraint('turno_id', 'turma_id', 'numero_aula', name='uq_periodo_aula_turno_turma_numero'),
+    )
 
 class Usuario(Base):
     __tablename__ = "usuarios"
@@ -96,6 +128,7 @@ class Turma(Base):
     # Relacionamentos
     turno = relationship("Turno", back_populates="turmas")
     horarios = relationship("Horario", back_populates="turma")
+    periodos_aula = relationship("PeriodoAula", back_populates="turma")
 
 class Disciplina(Base):
     __tablename__ = "disciplinas"
