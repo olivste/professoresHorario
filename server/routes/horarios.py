@@ -2,9 +2,9 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from typing import List
 
-from database import models, schemas
-import crud_new as crud
-from database.database import SessionLocal
+from server.database import models, schemas
+from server import crud_new as crud
+from server.database.database import SessionLocal
 
 router = APIRouter(prefix="/horarios", tags=["Horários"])
 
@@ -29,21 +29,6 @@ def create_horario(horario: schemas.HorarioCreate, db: Session = Depends(get_db)
         raise HTTPException(status_code=404, detail="Disciplina não encontrada")
     if not turma:
         raise HTTPException(status_code=404, detail="Turma não encontrada")
-    
-    # Verificar se o horário está em um período de intervalo/recreio/almoço
-    # Buscar períodos que não são do tipo AULA no mesmo turno
-    periodos_nao_aula = db.query(models.PeriodoAula).filter(
-        models.PeriodoAula.turno_id == horario.turno_id,
-        models.PeriodoAula.tipo != models.TipoPeriodoEnum.AULA
-    ).all()
-    
-    # Para cada período não-aula, verificar se o horário solicitado coincide
-    for periodo in periodos_nao_aula:
-        if (horario.hora_inicio <= periodo.hora_fim and horario.hora_fim >= periodo.hora_inicio):
-            raise HTTPException(
-                status_code=400, 
-                detail=f"Não é possível cadastrar aula durante um período de {periodo.tipo.value} ({periodo.descricao})"
-            )
     
     return crud.create_horario(db=db, horario=horario)
 
