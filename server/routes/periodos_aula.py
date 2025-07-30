@@ -8,13 +8,9 @@ from utils import get_db
 
 router = APIRouter(
     prefix="/periodos-aula",
-    tags=["Períodos de Aul@router.post("/clonar", response_model=List[schemas.PeriodoAula])
-def clonar_periodos_aula(
-    turno_origem_id: int, 
-    turno_destino_id: Optional[int] = None,
-    turma_destino_id: Optional[int] = None,
-    db: Session = Depends(get_db)
-):
+    tags=["Períodos de Aula"]
+)
+
 @router.post("/", response_model=schemas.PeriodoAula)
 def create_periodo_aula(periodo_aula: schemas.PeriodoAulaCreate, db: Session = Depends(get_db)):
     # Verificar se o turno existe
