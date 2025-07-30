@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from database import models
 from database.database import engine
-from routes import auth, usuarios, professores, disciplinas, turmas, horarios, espacos, reservas, professor_disciplinas, turnos
+from routes import auth, usuarios, professores, disciplinas, turmas, horarios, espacos, reservas, professor_disciplinas, turnos, periodos_aula
 
 # Create database tables
 models.Base.metadata.create_all(bind=engine)
@@ -39,6 +39,7 @@ app.include_router(professores.router)
 app.include_router(disciplinas.router)
 app.include_router(turmas.router)
 app.include_router(turnos.router)
+app.include_router(periodos_aula.router)
 app.include_router(horarios.router)
 app.include_router(espacos.router)
 app.include_router(reservas.router)

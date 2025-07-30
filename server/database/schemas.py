@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr
-from typing import List, Optional
+from typing import List, Optional, ForwardRef
 from datetime import datetime, date, time
 from enum import Enum
 
@@ -30,7 +30,13 @@ class StatusReservaEnum(str, Enum):
     APROVADA = "aprovada"
     REJEITADA = "rejeitada"
     CANCELADA = "cancelada"
-
+    
+class TipoPeriodoEnum(str, Enum):
+    AULA = "AULA"
+    INTERVALO = "INTERVALO"
+    ALMOCO = "ALMOCO"
+    RECREIO = "RECREIO"
+    OUTRO = "OUTRO"
 # Turno schemas
 class TurnoBase(BaseModel):
     nome: str
@@ -53,6 +59,38 @@ class Turno(TurnoBase):
     id: int
     created_at: datetime
     updated_at: Optional[datetime] = None
+    periodos_aula: List["PeriodoAula"] = []
+
+    class Config:
+        from_attributes = True
+
+# PeriodoAula schemas
+class PeriodoAulaBase(BaseModel):
+    turno_id: int
+    numero_aula: int
+    hora_inicio: time
+    hora_fim: time
+    tipo: TipoPeriodoEnum = TipoPeriodoEnum.AULA
+    descricao: Optional[str] = None
+    ativo: bool = True
+
+class PeriodoAulaCreate(PeriodoAulaBase):
+    pass
+
+class PeriodoAulaUpdate(BaseModel):
+    turno_id: Optional[int] = None
+    numero_aula: Optional[int] = None
+    hora_inicio: Optional[time] = None
+    hora_fim: Optional[time] = None
+    tipo: Optional[TipoPeriodoEnum] = None
+    descricao: Optional[str] = None
+    ativo: Optional[bool] = None
+
+class PeriodoAula(PeriodoAulaBase):
+    id: int
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+    turno: Optional[Turno] = None
 
     class Config:
         from_attributes = True
@@ -281,6 +319,8 @@ class ReservaEspaco(ReservaEspacoBase):
 # Update forward references
 Professor.model_rebuild()
 Horario.model_rebuild()
+PeriodoAula.model_rebuild()
+Turno.model_rebuild()
 
 # ================================
 # SCHEMAS DE AUTENTICAÇÃO

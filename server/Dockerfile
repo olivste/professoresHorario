@@ -7,12 +7,12 @@ WORKDIR /app
 # Install system dependencies
 RUN apt-get update && apt-get install -y gcc && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements file from the parent directory and install dependencies
-COPY requirements.txt .
+# Copy requirements file from the server directory and install dependencies
+COPY server/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the application code from the 'server' directory on the host
-COPY . .
+COPY server/ .
 
 # Expose port
 EXPOSE 8000
