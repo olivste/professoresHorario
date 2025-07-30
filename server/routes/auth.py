@@ -6,9 +6,9 @@ from datetime import timedelta
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 
-from server.database import models, schemas
-from server import crud_new as crud
-from server.database.database import SessionLocal
+from database import models, schemas
+import crud_new as crud
+from database.database import SessionLocal
 
 # JWT Configuration
 import os

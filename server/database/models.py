@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text, Bool
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import enum
-from server.database.database import Base
+from database.database import Base
 
 class UserRole(enum.Enum):
     DIRETOR = "DIRETOR"

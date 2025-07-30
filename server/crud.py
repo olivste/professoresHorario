@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from . import models, schemas
+from server.database import models, schemas
 from typing import Optional
 
 # Professor CRUD operations

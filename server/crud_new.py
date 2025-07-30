@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, func
-from server.database import models, schemas
+from database import models, schemas
 from typing import Optional, List
 from datetime import date, time
 from passlib.context import CryptContext

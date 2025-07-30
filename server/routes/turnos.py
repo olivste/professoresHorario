@@ -2,9 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 
-from server.database import schemas
-from server import crud_new as crud
-from server.utils import get_db
+from database import schemas
+import crud_new as crud
+from utils import get_db
 
 router = APIRouter(
     prefix="/turnos",

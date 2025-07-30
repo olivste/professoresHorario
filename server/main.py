@@ -1,9 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from server.database import models
-from server.database.database import engine
-from server.routes import auth, usuarios, professores, disciplinas, turmas, horarios, espacos, reservas, professor_disciplinas, turnos
+from database import models
+from database.database import engine
+from routes import auth, usuarios, professores, disciplinas, turmas, horarios, espacos, reservas, professor_disciplinas, turnos
 
 # Create database tables
 models.Base.metadata.create_all(bind=engine)

@@ -1,9 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .database import models
-from .database.database import engine
-from .routes import auth, usuarios, professores, disciplinas, turmas, horarios, espacos, reservas, professor_disciplinas
+from server.database import models
+from server.database.database import engine
+from server.routes import auth, usuarios, professores, disciplinas, turmas, horarios, espacos, reservas, professor_disciplinas, turnos
 
 # Create database tables
 models.Base.metadata.create_all(bind=engine)
@@ -38,6 +38,7 @@ app.include_router(usuarios.router)
 app.include_router(professores.router)
 app.include_router(disciplinas.router)
 app.include_router(turmas.router)
+app.include_router(turnos.router)
 app.include_router(horarios.router)
 app.include_router(espacos.router)
 app.include_router(reservas.router)
