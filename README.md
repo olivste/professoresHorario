@@ -15,18 +15,15 @@ Uma API REST desenvolvida em Python com FastAPI para gerenciar professores e seu
 
 ```
 professoresHorario/
-├── app/
-│   ├── __init__.py
-│   ├── main.py          # Aplicação principal FastAPI
-│   ├── database.py      # Configuração do banco de dados
-│   ├── models.py        # Modelos SQLAlchemy
-│   ├── schemas.py       # Schemas Pydantic
-│   └── crud.py          # Operações CRUD
-├── docker-compose.yml   # Configuração Docker Compose
-├── Dockerfile           # Imagem Docker da API
-├── requirements.txt     # Dependências Python
-├── .env                 # Variáveis de ambiente
-└── README.md           # Este arquivo
+├── client/              # Frontend (Next.js)
+├── server/              # API FastAPI
+│   ├── main.py           # Aplicação principal FastAPI
+│   ├── config.py         # Configurações via variáveis de ambiente
+│   ├── database/         # Configuração do banco + modelos SQLAlchemy
+│   └── routes/           # Rotas da API
+├── docker-compose.yml    # Configuração Docker Compose
+├── .env                  # Variáveis de ambiente
+└── README.md             # Este arquivo
 ```
 
 ## Executando a Aplicação
@@ -127,8 +124,13 @@ Para acessar o banco externamente, use localhost:5432.
 Configuradas no arquivo `.env`:
 
 - `DATABASE_URL`: URL de conexão com o PostgreSQL
-- `SECRET_KEY`: Chave secreta (altere em produção)
+- `SECRET_KEY`: Chave secreta (defina em produção)
 - `DEBUG`: Modo debug (True/False)
+- `ALLOWED_ORIGINS`: Origens permitidas para CORS (separe por vírgula)
+- `AUTO_CREATE_TABLES`: Cria tabelas automaticamente (use apenas em desenvolvimento)
+- `CREATE_DEFAULT_ADMIN`: Cria usuário admin padrão no startup (use apenas em desenvolvimento)
+- `DEFAULT_ADMIN_USERNAME`: Nome do usuário admin padrão
+- `DEFAULT_ADMIN_PASSWORD`: Senha do usuário admin padrão
 
 ## Desenvolvimento
 
@@ -141,7 +143,7 @@ pip install -r requirements.txt
 export DATABASE_URL="postgresql://postgres:postgres123@localhost:5432/professores_db"
 
 # Executar a aplicação
-uvicorn app.main:app --reload
+uvicorn server.main:app --reload
 ```
 
 ### Adicionando novas dependências
@@ -176,6 +178,13 @@ docker-compose logs -f
 - Verifique se o container da API está rodando
 - Verifique os logs: `docker-compose logs api`
 - Teste a saúde da aplicação: `curl http://localhost:8000/health`
+
+## Produção (recomendações mínimas)
+
+- Defina `SECRET_KEY` com valor seguro e desative `DEBUG`.
+- Desative `AUTO_CREATE_TABLES` e use migrações (Alembic).
+- Desative `CREATE_DEFAULT_ADMIN` e crie usuários administradores via fluxo seguro.
+- Configure `ALLOWED_ORIGINS` com os domínios do frontend.
 
 ## Próximos Passos
 
