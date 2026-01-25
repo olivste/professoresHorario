@@ -5,7 +5,7 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { GraduationCap, Home, Users, Clock, Calendar, BookOpen, Settings, LogOut, Menu, User } from "lucide-react"
+import { GraduationCap, Home, Users, Clock, Calendar, BookOpen, Settings, LogOut, Menu, User, DoorOpen, Inbox } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
 
 const getNavigationItems = (userRole: string) => {
@@ -29,6 +29,8 @@ const getNavigationItems = (userRole: string) => {
     { name: "Turmas", href: "/turmas", icon: Users },
     { name: "Disciplinas", href: "/disciplinas", icon: BookOpen },
     { name: "Horários", href: "/horarios", icon: Calendar },
+    { name: "Espaços", href: "/espacos", icon: DoorOpen },
+    { name: "Reservas", href: "/reservas", icon: Inbox },
     { name: "Configurações", href: "/configuracoes", icon: Settings, roles: ["DIRETOR"] },
   ]
 }
@@ -38,7 +40,8 @@ export function Navigation() {
   const pathname = usePathname()
   const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
-  const navigationItems = getNavigationItems(user?.role || "")
+  const userRole = user?.role || ""
+  const navigationItems = getNavigationItems(userRole).filter((item: any) => !item.roles || item.roles.includes(userRole))
 
   if (!isAuthenticated || pathname === "/login") {
     return null

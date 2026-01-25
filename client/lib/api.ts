@@ -2,28 +2,45 @@ import { API_BASE_URL, TOKEN_NAME, ENDPOINTS } from './config';
 
 class ApiClient {
   private getAuthHeaders() {
-    // Use TOKEN_NAME from config
-    const token = typeof window !== 'undefined' ? localStorage.getItem(TOKEN_NAME) : null
+    const token = typeof window !== "undefined" ? localStorage.getItem(TOKEN_NAME) : null
     return {
       "Content-Type": "application/json",
-      ...(token && { Authorization: `Bearer ${token}` }),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    }
+  }
+
+  private handleUnauthorized() {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem(TOKEN_NAME)
+      window.location.href = "/login"
     }
   }
 
   async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${API_BASE_URL}${endpoint}`
-    const config: RequestInit = {
-      headers: this.getAuthHeaders(),
-      ...options,
+    const headers = {
+      ...this.getAuthHeaders(),
+      ...(options.headers || {}),
     }
 
-    const response = await fetch(url, config)
+    const response = await fetch(url, { ...options, headers })
 
     if (!response.ok) {
-      throw new Error(`API Error: ${response.status}`)
+      if (response.status === 401) {
+        this.handleUnauthorized()
+        throw new Error("Não autorizado")
+      }
+      let message = `API Error: ${response.status}`
+      try {
+        const err = await response.json()
+        if (err?.detail) message = Array.isArray(err.detail) ? err.detail[0]?.msg || message : err.detail
+      } catch (_) {
+        // ignore json parse failure
+      }
+      throw new Error(message)
     }
 
-    return response.json()
+    return response.json() as Promise<T>
   }
 
   // Auth
@@ -44,6 +61,10 @@ class ApiClient {
     }
     
     return result
+  }
+
+  async me() {
+    return this.request(ENDPOINTS.ME)
   }
   
   logout() {
@@ -233,6 +254,56 @@ class ApiClient {
 
   async deleteHorario(id: number) {
     return this.request(`${ENDPOINTS.HORARIOS}/${id}`, {
+      method: "DELETE",
+    })
+  }
+
+  // Espaços
+  async getEspacos() {
+    return this.request(ENDPOINTS.ESPACOS)
+  }
+
+  async createEspaco(data: any) {
+    return this.request(ENDPOINTS.ESPACOS, {
+      method: "POST",
+      body: JSON.stringify(data),
+    })
+  }
+
+  async updateEspaco(id: number, data: any) {
+    return this.request(`${ENDPOINTS.ESPACOS}/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    })
+  }
+
+  async deleteEspaco(id: number) {
+    return this.request(`${ENDPOINTS.ESPACOS}/${id}`, {
+      method: "DELETE",
+    })
+  }
+
+  // Reservas
+  async getReservas() {
+    return this.request(ENDPOINTS.RESERVAS)
+  }
+
+  async createReserva(data: any) {
+    return this.request(ENDPOINTS.RESERVAS, {
+      method: "POST",
+      body: JSON.stringify(data),
+    })
+  }
+
+  async updateReserva(id: number, data: any) {
+    return this.request(`${ENDPOINTS.RESERVAS}/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    })
+  }
+
+  async deleteReserva(id: number) {
+    return this.request(`${ENDPOINTS.RESERVAS}/${id}`, {
       method: "DELETE",
     })
   }

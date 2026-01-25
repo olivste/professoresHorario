@@ -168,7 +168,17 @@ class Horario(Base):
     disciplina_id = Column(Integer, ForeignKey("disciplinas.id"), nullable=False)
     turma_id = Column(Integer, ForeignKey("turmas.id"), nullable=False)
     turno_id = Column(Integer, ForeignKey("turnos.id"), nullable=False)
-    dia_semana = Column(Enum(DiaSemanaEnum), nullable=False)
+    # Store enum values (lowercase) instead of names; use native_enum=False to avoid Postgres ENUM mismatch
+    dia_semana = Column(
+        Enum(
+            DiaSemanaEnum,
+            values_callable=lambda enum_cls: [e.value for e in enum_cls],
+            validate_strings=True,
+            native_enum=False,
+            name="diasemanaenum",
+        ),
+        nullable=False,
+    )
     hora_inicio = Column(Time, nullable=False)
     hora_fim = Column(Time, nullable=False)
     sala = Column(String(50))
@@ -209,7 +219,17 @@ class ReservaEspaco(Base):
     hora_fim = Column(Time, nullable=False)
     finalidade = Column(String(200), nullable=False)
     observacoes = Column(Text)
-    status = Column(Enum(StatusReservaEnum), default=StatusReservaEnum.PENDENTE)
+    # Store enum values (lowercase) instead of native PG enum to avoid mismatch
+    status = Column(
+        Enum(
+            StatusReservaEnum,
+            values_callable=lambda enum_cls: [e.value for e in enum_cls],
+            validate_strings=True,
+            native_enum=False,
+            name="statusreservaenum",
+        ),
+        default=StatusReservaEnum.PENDENTE,
+    )
     aprovado_por = Column(Integer, ForeignKey("usuarios.id"))
     data_aprovacao = Column(DateTime(timezone=True))
     created_at = Column(DateTime(timezone=True), server_default=func.now())

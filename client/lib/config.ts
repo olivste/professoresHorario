@@ -10,6 +10,7 @@ export const TOKEN_NAME = 'professores_horario_token';
 export const ENDPOINTS = {
   // Auth
   LOGIN: '/auth/login',
+  ME: '/auth/me',
   
   // Usuários
   USUARIOS: '/usuarios',

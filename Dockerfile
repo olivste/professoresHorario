@@ -1,9 +1,9 @@
-FROM node:20-alpine as client-builder
+FROM node:20 as client-builder
 
 # Set working directory for client
 WORKDIR /app/client
-COPY client/package*.json ./
-RUN npm ci
+COPY client/package.json ./
+RUN npm install
 COPY client/ ./
 RUN npm run build
 
@@ -29,7 +29,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY server/ .
 
 # Copy client build from the previous stage
-COPY --from=client-builder /app/client/out /app/client/out
+COPY --from=client-builder /app/client/.next /app/client/.next
+COPY --from=client-builder /app/client/node_modules /app/client/node_modules
+COPY --from=client-builder /app/client/public /app/client/public
 
 # Copy the database migration scripts
 COPY server/migrate_db.py .

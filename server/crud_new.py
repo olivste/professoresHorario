@@ -208,6 +208,35 @@ def get_horarios_professor(db: Session, professor_id: int):
 def get_horarios_turma(db: Session, turma_id: int):
     return db.query(models.Horario).filter(models.Horario.turma_id == turma_id).all()
 
+def verificar_conflito_horario(
+    db: Session,
+    professor_id: int,
+    turma_id: int,
+    turno_id: int,
+    dia_semana,
+    hora_inicio: time,
+    hora_fim: time,
+    horario_id: Optional[int] = None,
+):
+    query = db.query(models.Horario).filter(
+        models.Horario.turno_id == turno_id,
+        models.Horario.dia_semana == dia_semana,
+        or_(
+            models.Horario.professor_id == professor_id,
+            models.Horario.turma_id == turma_id,
+        ),
+        or_(
+            and_(models.Horario.hora_inicio <= hora_inicio, models.Horario.hora_fim > hora_inicio),
+            and_(models.Horario.hora_inicio < hora_fim, models.Horario.hora_fim >= hora_fim),
+            and_(models.Horario.hora_inicio >= hora_inicio, models.Horario.hora_fim <= hora_fim),
+        ),
+    )
+
+    if horario_id:
+        query = query.filter(models.Horario.id != horario_id)
+
+    return query.first() is not None
+
 def create_horario(db: Session, horario: schemas.HorarioCreate):
     db_horario = models.Horario(**horario.model_dump())
     db.add(db_horario)

@@ -1,11 +1,15 @@
 "use client"
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
+import { apiClient } from "@/lib/api"
+import { TOKEN_NAME } from "@/lib/config"
 
 interface Usuario {
   id: number
   nome: string
+  username: string
   email: string
+  telefone?: string
   role: "DIRETOR" | "PEDAGOGO" | "COORDENADOR" | "PROFESSOR"
   ativo: boolean
 }
@@ -13,7 +17,8 @@ interface Usuario {
 interface AuthContextType {
   user: Usuario | null
   isAuthenticated: boolean
-  login: (email: string, senha: string) => Promise<void>
+  isLoading: boolean
+  login: (username: string, senha: string) => Promise<void>
   logout: () => void
 }
 
@@ -22,49 +27,46 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<Usuario | null>(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    // Check for stored auth data on mount
-    const storedUser = localStorage.getItem("user")
-    const storedToken = localStorage.getItem("token")
-
-    if (storedUser && storedToken) {
-      setUser(JSON.parse(storedUser))
-      setIsAuthenticated(true)
+    const bootstrap = async () => {
+      const storedToken = localStorage.getItem(TOKEN_NAME)
+      if (!storedToken) {
+        setIsLoading(false)
+        return
+      }
+      try {
+        const me = await apiClient.me()
+        setUser(me as Usuario)
+        setIsAuthenticated(true)
+      } catch (err) {
+        localStorage.removeItem(TOKEN_NAME)
+        setUser(null)
+        setIsAuthenticated(false)
+      } finally {
+        setIsLoading(false)
+      }
     }
+
+    bootstrap()
   }, [])
 
-  const login = async (email: string, senha: string) => {
-    // Mock authentication - replace with actual API call
-    const mockUsers = [
-      { id: 1, nome: "João Diretor", email: "diretor@escola.com", role: "DIRETOR" as const, ativo: true },
-      { id: 2, nome: "Maria Coordenadora", email: "coord@escola.com", role: "COORDENADOR" as const, ativo: true },
-      { id: 3, nome: "Pedro Professor", email: "prof@escola.com", role: "PROFESSOR" as const, ativo: true },
-    ]
-
-    const foundUser = mockUsers.find((u) => u.email === email)
-
-    if (foundUser && senha === "senha123") {
-      const mockToken = "mock-jwt-token"
-
-      setUser(foundUser)
-      setIsAuthenticated(true)
-
-      localStorage.setItem("user", JSON.stringify(foundUser))
-      localStorage.setItem("token", mockToken)
-    } else {
-      throw new Error("Invalid credentials")
-    }
+  const login = async (username: string, senha: string) => {
+    const { access_token } = await apiClient.login(username, senha)
+    localStorage.setItem(TOKEN_NAME, access_token)
+    const me = await apiClient.me()
+    setUser(me as Usuario)
+    setIsAuthenticated(true)
   }
 
   const logout = () => {
+    apiClient.logout()
     setUser(null)
     setIsAuthenticated(false)
-    localStorage.removeItem("user")
-    localStorage.removeItem("token")
   }
 
-  return <AuthContext.Provider value={{ user, isAuthenticated, login, logout }}>{children}</AuthContext.Provider>
+  return <AuthContext.Provider value={{ user, isAuthenticated, isLoading, login, logout }}>{children}</AuthContext.Provider>
 }
 
 export function useAuth() {

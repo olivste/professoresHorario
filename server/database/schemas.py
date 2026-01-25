@@ -165,6 +165,18 @@ class Professor(ProfessorBase):
     class Config:
         from_attributes = True
 
+
+# Professor schema without nested horarios to avoid cyclic responses
+class ProfessorSemHorarios(ProfessorBase):
+    id: int
+    usuario_id: int
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+    usuario: Usuario
+
+    class Config:
+        from_attributes = True
+
 # Disciplina schemas
 class DisciplinaBase(BaseModel):
     nome: str
@@ -267,7 +279,7 @@ class Horario(HorarioBase):
     id: int
     created_at: datetime
     updated_at: Optional[datetime] = None
-    professor: Professor
+    professor: ProfessorSemHorarios
     disciplina: Disciplina
     turma: Turma
     turno: Turno

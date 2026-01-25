@@ -38,5 +38,17 @@ services:
     volumes:
       - ./server:/app
 
+  web:
+    build:
+      context: .
+      dockerfile: ./client/Dockerfile
+    container_name: professores_web
+    environment:
+      NEXT_PUBLIC_API_URL: http://${HOST_IP:-localhost}:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+
 volumes:
   postgres_data:

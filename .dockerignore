@@ -1,0 +1,10 @@
+client/node_modules
+client/.next
+client/package-lock.json
+server/__pycache__/
+**/__pycache__/
+*.pyc
+.git
+.gitignore
+.DS_Store
+.vscode/

@@ -29,6 +29,17 @@ def create_horario(horario: schemas.HorarioCreate, db: Session = Depends(get_db)
         raise HTTPException(status_code=404, detail="Disciplina não encontrada")
     if not turma:
         raise HTTPException(status_code=404, detail="Turma não encontrada")
+
+    if crud.verificar_conflito_horario(
+        db,
+        professor_id=horario.professor_id,
+        turma_id=horario.turma_id,
+        turno_id=horario.turno_id,
+        dia_semana=horario.dia_semana,
+        hora_inicio=horario.hora_inicio,
+        hora_fim=horario.hora_fim,
+    ):
+        raise HTTPException(status_code=400, detail="Conflito de horário para professor ou turma")
     
     return crud.create_horario(db=db, horario=horario)
 
@@ -39,10 +50,30 @@ def read_horarios(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)
 
 @router.put("/{horario_id}", response_model=schemas.Horario)
 def update_horario(horario_id: int, horario: schemas.HorarioUpdate, db: Session = Depends(get_db)):
-    db_horario = crud.update_horario(db, horario_id=horario_id, horario=horario)
-    if db_horario is None:
+    atual = crud.get_horario(db, horario_id)
+    if atual is None:
         raise HTTPException(status_code=404, detail="Horário não encontrado")
-    return db_horario
+
+    professor_id = horario.professor_id if horario.professor_id is not None else atual.professor_id
+    turma_id = horario.turma_id if horario.turma_id is not None else atual.turma_id
+    turno_id = horario.turno_id if horario.turno_id is not None else atual.turno_id
+    dia_semana = horario.dia_semana if horario.dia_semana is not None else atual.dia_semana
+    hora_inicio = horario.hora_inicio if horario.hora_inicio is not None else atual.hora_inicio
+    hora_fim = horario.hora_fim if horario.hora_fim is not None else atual.hora_fim
+
+    if crud.verificar_conflito_horario(
+        db,
+        professor_id=professor_id,
+        turma_id=turma_id,
+        turno_id=turno_id,
+        dia_semana=dia_semana,
+        hora_inicio=hora_inicio,
+        hora_fim=hora_fim,
+        horario_id=horario_id,
+    ):
+        raise HTTPException(status_code=400, detail="Conflito de horário para professor ou turma")
+
+    return crud.update_horario(db, horario_id=horario_id, horario=horario)
 
 @router.delete("/{horario_id}")
 def delete_horario(horario_id: int, db: Session = Depends(get_db)):
