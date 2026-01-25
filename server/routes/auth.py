@@ -9,15 +9,10 @@ from passlib.context import CryptContext
 from database import models, schemas
 import crud_new as crud
 from database.database import SessionLocal
+from config import SECRET_KEY, ACCESS_TOKEN_EXPIRE_MINUTES
 
 # JWT Configuration
-import os
-from dotenv import load_dotenv
-load_dotenv()
-
-SECRET_KEY = os.getenv("SECRET_KEY", "your_secret_key_here_change_in_production")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

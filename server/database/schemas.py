@@ -118,6 +118,8 @@ class PeriodoAula(PeriodoAulaBase):
 class UsuarioBase(BaseModel):
     nome: str
     username: str
+    email: EmailStr
+    telefone: Optional[str] = None
     role: UserRole = UserRole.PROFESSOR
     ativo: bool = True
 
