@@ -34,6 +34,7 @@ AUTO_CREATE_TABLES = _as_bool(os.getenv("AUTO_CREATE_TABLES"), default=DEBUG)
 CREATE_DEFAULT_ADMIN = _as_bool(os.getenv("CREATE_DEFAULT_ADMIN"), default=DEBUG)
 DEFAULT_ADMIN_USERNAME = os.getenv("DEFAULT_ADMIN_USERNAME", "admin")
 DEFAULT_ADMIN_PASSWORD = os.getenv("DEFAULT_ADMIN_PASSWORD", "admin123")
+DEFAULT_ADMIN_EMAIL = os.getenv("DEFAULT_ADMIN_EMAIL", "admin@example.com")
 
 
 def validate_settings() -> None:
@@ -43,3 +44,5 @@ def validate_settings() -> None:
         raise RuntimeError("Default admin password must be changed in production.")
     if CREATE_DEFAULT_ADMIN and not DEFAULT_ADMIN_PASSWORD:
         raise RuntimeError("DEFAULT_ADMIN_PASSWORD must be set when creating admin.")
+    if CREATE_DEFAULT_ADMIN and not DEFAULT_ADMIN_EMAIL:
+        raise RuntimeError("DEFAULT_ADMIN_EMAIL must be set when creating admin.")

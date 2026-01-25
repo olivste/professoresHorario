@@ -10,6 +10,7 @@ from config import (
     ALLOWED_ORIGINS,
     AUTO_CREATE_TABLES,
     CREATE_DEFAULT_ADMIN,
+    DEFAULT_ADMIN_EMAIL,
     DEFAULT_ADMIN_PASSWORD,
     DEFAULT_ADMIN_USERNAME,
     validate_settings,
@@ -25,7 +26,7 @@ def create_admin_user():
     db = SessionLocal()
     try:
         # Verificar se o usuário admin já existe
-        admin_user = db.query(models.Usuario).filter(models.Usuario.username == "admin").first()
+        admin_user = db.query(models.Usuario).filter(models.Usuario.username == DEFAULT_ADMIN_USERNAME).first()
         
         if not admin_user:
             # Criar um novo usuário administrador
@@ -35,6 +36,7 @@ def create_admin_user():
             new_admin = models.Usuario(
                 nome="Administrador",
                 username=DEFAULT_ADMIN_USERNAME,
+                email=DEFAULT_ADMIN_EMAIL,
                 senha_hash=hashed_password,
                 role=models.UserRole.DIRETOR,
                 ativo=True

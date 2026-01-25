@@ -57,6 +57,9 @@ def get_usuario(db: Session, usuario_id: int):
 def get_usuario_by_username(db: Session, username: str):
     return db.query(models.Usuario).filter(models.Usuario.username == username).first()
 
+def get_usuario_by_email(db: Session, email: str):
+    return db.query(models.Usuario).filter(models.Usuario.email == email).first()
+
 def get_usuarios(db: Session, skip: int = 0, limit: int = 100):
     return db.query(models.Usuario).offset(skip).limit(limit).all()
 

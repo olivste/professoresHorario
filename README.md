@@ -131,6 +131,7 @@ Configuradas no arquivo `.env`:
 - `CREATE_DEFAULT_ADMIN`: Cria usuário admin padrão no startup (use apenas em desenvolvimento)
 - `DEFAULT_ADMIN_USERNAME`: Nome do usuário admin padrão
 - `DEFAULT_ADMIN_PASSWORD`: Senha do usuário admin padrão
+- `DEFAULT_ADMIN_EMAIL`: Email do usuário admin padrão
 
 ## Desenvolvimento
 
