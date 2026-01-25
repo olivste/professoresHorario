@@ -1,22 +1,18 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-import os
-from dotenv import load_dotenv
 
-load_dotenv()
+from config import DATABASE_URL
 
-# Get the DATABASE_URL from environment
-database_url = os.getenv("DATABASE_URL", "postgresql://postgres:postgres123@localhost:5432/professores_db")
-
-# Railway provides PostgreSQL connection strings starting with postgres://, 
+# Railway provides PostgreSQL connection strings starting with postgres://,
 # but SQLAlchemy 1.4+ requires postgresql://
-if database_url.startswith("postgres://"):
-    database_url = database_url.replace("postgres://", "postgresql://", 1)
+database_url = (
+    DATABASE_URL.replace("postgres://", "postgresql://", 1)
+    if DATABASE_URL.startswith("postgres://")
+    else DATABASE_URL
+)
 
-DATABASE_URL = database_url
-
-engine = create_engine(DATABASE_URL)
+engine = create_engine(database_url)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()

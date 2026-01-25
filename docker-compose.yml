@@ -23,6 +23,12 @@ services:
     container_name: professores_api
     environment:
       DATABASE_URL: postgresql://postgres:postgres123@postgres:5432/professores_db
+      DEBUG: "true"
+      AUTO_CREATE_TABLES: "true"
+      CREATE_DEFAULT_ADMIN: "true"
+      DEFAULT_ADMIN_USERNAME: "admin"
+      DEFAULT_ADMIN_PASSWORD: "admin123"
+      ALLOWED_ORIGINS: "http://localhost:3000"
     ports:
       - "8000:8000"
     depends_on:

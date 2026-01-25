@@ -1,12 +1,21 @@
+import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from database import models
 from database.database import engine
 from routes import auth, usuarios, professores, disciplinas, turmas, horarios, espacos, reservas, professor_disciplinas, turnos, periodos_aula
+from config import (
+    ALLOWED_ORIGINS,
+    AUTO_CREATE_TABLES,
+    CREATE_DEFAULT_ADMIN,
+    DEFAULT_ADMIN_PASSWORD,
+    DEFAULT_ADMIN_USERNAME,
+    validate_settings,
+)
 
-# Create database tables
-models.Base.metadata.create_all(bind=engine)
+logger = logging.getLogger(__name__)
 
 # Função para criar o usuário administrador se ele não existir
 def create_admin_user():
@@ -20,12 +29,12 @@ def create_admin_user():
         
         if not admin_user:
             # Criar um novo usuário administrador
-            print("Criando usuário administrador padrão...")
-            hashed_password = get_password_hash("admin123")
+            logger.info("Criando usuário administrador padrão...")
+            hashed_password = get_password_hash(DEFAULT_ADMIN_PASSWORD)
             
             new_admin = models.Usuario(
                 nome="Administrador",
-                username="admin",
+                username=DEFAULT_ADMIN_USERNAME,
                 senha_hash=hashed_password,
                 role=models.UserRole.DIRETOR,
                 ativo=True
@@ -33,17 +42,14 @@ def create_admin_user():
             
             db.add(new_admin)
             db.commit()
-            print("Usuário administrador criado com sucesso!")
+            logger.info("Usuário administrador criado com sucesso!")
         else:
-            print("Usuário administrador já existe!")
+            logger.info("Usuário administrador já existe!")
     except Exception as e:
-        print(f"Erro ao criar usuário administrador: {e}")
+        logger.exception("Erro ao criar usuário administrador: %s", e)
         db.rollback()
     finally:
         db.close()
-
-# Chamar a função para criar o admin
-create_admin_user()
 
 app = FastAPI(
     title="Sistema de Gestão Escolar - Professores e Horários",
@@ -51,10 +57,18 @@ app = FastAPI(
     version="2.0.0"
 )
 
+@app.on_event("startup")
+def startup() -> None:
+    validate_settings()
+    if AUTO_CREATE_TABLES:
+        models.Base.metadata.create_all(bind=engine)
+    if CREATE_DEFAULT_ADMIN:
+        create_admin_user()
+
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
