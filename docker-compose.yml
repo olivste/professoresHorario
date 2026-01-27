@@ -44,7 +44,8 @@ services:
       dockerfile: Dockerfile
     container_name: professores_web
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:8000
+      #*NEXT_PUBLIC_API_URL: http://localhost:8000
+      NEXT_PUBLIC_API_URL: https://api.edu.gsuave.site
       API_URL_INTERNAL: http://api:8000
     ports:
       - "3033:3000"
