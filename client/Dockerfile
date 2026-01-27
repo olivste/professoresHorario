@@ -1,32 +1,25 @@
-FROM node:20 AS builder
-
-WORKDIR /app/client
+# Build stage
+FROM node:20-alpine AS build
+WORKDIR /app
 
 # Install dependencies
-COPY client/package.json ./
+COPY package.json package-lock.json* yarn.lock* pnpm-lock.yaml* ./
 RUN npm install
 
-# Copy client source code
-COPY client/ ./
-
-# Build Next.js app
+# Copy source and build
+COPY . .
+ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
-# Production stage
-FROM node:20
+# Runtime stage
+FROM node:20-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+ENV PORT=3000
 
-WORKDIR /app/client
+# Copy app artifacts
+COPY --from=build /app .
 
-# Install only production dependencies
-COPY client/package.json ./
-RUN npm install --omit=dev
-
-# Copy built app from builder
-COPY --from=builder /app/client/.next ./.next
-COPY client/package.json ./
-
-# Expose port
 EXPOSE 3000
-
-# Start the app listening on all interfaces
-CMD ["npm", "run", "start", "--", "-H", "0.0.0.0", "-p", "3000"]
+# Ensure Next binds to 0.0.0.0
+CMD ["sh", "-c", "npx next start -H 0.0.0.0 -p ${PORT:-3000}"]

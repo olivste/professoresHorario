@@ -29,7 +29,7 @@ services:
       DEFAULT_ADMIN_USERNAME: "admin"
       DEFAULT_ADMIN_PASSWORD: "admin123"
       DEFAULT_ADMIN_EMAIL: "admin@example.com"
-      ALLOWED_ORIGINS: "http://localhost:3000"
+      ALLOWED_ORIGINS: "http://localhost:3000,http://127.0.0.1:3000"
     ports:
       - "8000:8000"
     depends_on:
@@ -40,13 +40,14 @@ services:
 
   web:
     build:
-      context: .
-      dockerfile: ./client/Dockerfile
+      context: ./client
+      dockerfile: Dockerfile
     container_name: professores_web
     environment:
-      NEXT_PUBLIC_API_URL: http://${HOST_IP:-localhost}:8000
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+      API_URL_INTERNAL: http://api:8000
     ports:
-      - "3000:3000"
+      - "3000:3033"
     depends_on:
       - api
 
