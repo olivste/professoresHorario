@@ -29,7 +29,7 @@ services:
       DEFAULT_ADMIN_USERNAME: "admin"
       DEFAULT_ADMIN_PASSWORD: "admin123"
       DEFAULT_ADMIN_EMAIL: "admin@example.com"
-      ALLOWED_ORIGINS: "http://localhost:3000,http://127.0.0.1:3000"
+      ALLOWED_ORIGINS: "http://localhost:3000,http://127.0.0.1:3000,https://edu.gsuave.site,http://edu.gsuave.site"
     ports:
       - "8000:8000"
     depends_on:
