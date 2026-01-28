@@ -48,8 +48,10 @@ export default function ProfessoresPage() {
   const [professores, setProfessores] = useState<Professor[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isEditOpen, setIsEditOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [deleteId, setDeleteId] = useState<number | null>(null)
+  const [editing, setEditing] = useState<Professor | null>(null)
   const { toast } = useToast()
 
   const [formData, setFormData] = useState({
@@ -179,6 +181,29 @@ export default function ProfessoresPage() {
     }
   }
 
+  async function handleUpdate(e: React.FormEvent) {
+    e.preventDefault()
+    if (!editing) return
+    setIsSaving(true)
+    try {
+      const payload = {
+        departamento: editing.departamento,
+        especializacao: editing.especializacao,
+        carga_horaria_semanal: editing.carga_horaria_semanal,
+        observacoes: editing.observacoes,
+      }
+      await apiClient.put(`/professores/${editing.id}/`, payload)
+      toast({ title: 'Sucesso', description: 'Professor atualizado com sucesso' })
+      setIsEditOpen(false)
+      setEditing(null)
+      loadProfessores()
+    } catch (error: any) {
+      toast({ title: 'Erro', description: error?.message || 'Erro ao atualizar professor', variant: 'destructive' })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
   function resetForm() {
     setFormData({
       departamento: '',
@@ -227,7 +252,14 @@ export default function ProfessoresPage() {
       header: 'Ações',
       cell: ({ row }) => (
         <div className="flex gap-2">
-          <Button variant="ghost" size="icon" disabled>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              setEditing(row.original)
+              setIsEditOpen(true)
+            }}
+          >
             <Pencil className="h-4 w-4" />
           </Button>
           <Button
@@ -430,6 +462,57 @@ export default function ProfessoresPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Editar Professor */}
+      <Dialog open={isEditOpen} onOpenChange={(open)=>{ setIsEditOpen(open); if(!open) setEditing(null) }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Editar Professor</DialogTitle>
+            <DialogDescription>Atualize os dados do professor</DialogDescription>
+          </DialogHeader>
+          {editing && (
+            <form onSubmit={handleUpdate} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Departamento*</Label>
+                  <Input
+                    value={editing.departamento}
+                    onChange={(e)=> setEditing({ ...editing, departamento: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Carga Horária Semanal*</Label>
+                  <Input
+                    type="number"
+                    value={editing.carga_horaria_semanal}
+                    onChange={(e)=> setEditing({ ...editing, carga_horaria_semanal: Number(e.target.value) })}
+                    required
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Observações</Label>
+                <Textarea
+                  value={editing.observacoes || ''}
+                  onChange={(e)=> setEditing({ ...editing, observacoes: e.target.value })}
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button type="button" variant="outline" onClick={()=> setIsEditOpen(false)} disabled={isSaving}>Cancelar</Button>
+                <Button type="submit" disabled={isSaving}>
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Salvando...
+                    </>
+                  ) : 'Salvar'}
+                </Button>
+              </div>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={deleteId !== null} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent>
