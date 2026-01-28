@@ -39,12 +39,12 @@ def update_espaco(espaco_id: int, espaco: schemas.EspacoEscolaUpdate, db: Sessio
         raise HTTPException(status_code=404, detail="Espaço não encontrado")
     return db_espaco
 
-@router.delete("/{espaco_id}")
+@router.delete("/{espaco_id}", status_code=204)
 def delete_espaco(espaco_id: int, db: Session = Depends(get_db)):
     success = crud.delete_espaco_escola(db, espaco_id=espaco_id)
     if not success:
         raise HTTPException(status_code=404, detail="Espaço não encontrado")
-    return {"message": "Espaço removido com sucesso"}
+    return None
 
 @router.get("/{espaco_id}/reservas/{data_reserva}")
 def read_reservas_espaco_data(espaco_id: int, data_reserva: str, db: Session = Depends(get_db)):

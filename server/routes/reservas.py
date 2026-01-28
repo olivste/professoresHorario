@@ -56,9 +56,9 @@ def update_reserva_status(
         raise HTTPException(status_code=404, detail="Reserva não encontrada")
     return {"message": f"Reserva {status.value} com sucesso"}
 
-@router.delete("/{reserva_id}")
+@router.delete("/{reserva_id}", status_code=204)
 def delete_reserva(reserva_id: int, db: Session = Depends(get_db)):
     success = crud.delete_reserva_espaco(db, reserva_id=reserva_id)
     if not success:
         raise HTTPException(status_code=404, detail="Reserva não encontrada")
-    return {"message": "Reserva removida com sucesso"}
+    return None

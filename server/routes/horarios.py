@@ -75,9 +75,9 @@ def update_horario(horario_id: int, horario: schemas.HorarioUpdate, db: Session 
 
     return crud.update_horario(db, horario_id=horario_id, horario=horario)
 
-@router.delete("/{horario_id}")
+@router.delete("/{horario_id}", status_code=204)
 def delete_horario(horario_id: int, db: Session = Depends(get_db)):
     success = crud.delete_horario(db, horario_id=horario_id)
     if not success:
         raise HTTPException(status_code=404, detail="Horário não encontrado")
-    return {"message": "Horário deletado com sucesso"}
+    return None

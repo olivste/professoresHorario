@@ -63,7 +63,17 @@ export class ApiClient {
       throw new Error(`API Error: ${response.statusText}`)
     }
     
-    return response.json()
+    if (response.status === 204) {
+      // No Content
+      return undefined as unknown as T
+    }
+    // Some delete endpoints may return JSON confirmation
+    const text = await response.text()
+    try {
+      return JSON.parse(text)
+    } catch {
+      return undefined as unknown as T
+    }
   }
 }
 

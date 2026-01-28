@@ -39,12 +39,12 @@ def update_disciplina(disciplina_id: int, disciplina: schemas.DisciplinaUpdate, 
         raise HTTPException(status_code=404, detail="Disciplina não encontrada")
     return db_disciplina
 
-@router.delete("/{disciplina_id}")
+@router.delete("/{disciplina_id}", status_code=204)
 def delete_disciplina(disciplina_id: int, db: Session = Depends(get_db)):
     success = crud.delete_disciplina(db, disciplina_id=disciplina_id)
     if not success:
         raise HTTPException(status_code=404, detail="Disciplina não encontrada")
-    return {"message": "Disciplina desativada com sucesso"}
+    return None
 
 @router.get("/{disciplina_id}/professores/", response_model=List[schemas.ProfessorDisciplina])
 def read_professores_disciplina(disciplina_id: int, db: Session = Depends(get_db)):

@@ -152,7 +152,7 @@ def update_periodo_aula(periodo_id: int, periodo: schemas.PeriodoAulaUpdate, db:
     
     return db_periodo
 
-@router.delete("/{periodo_id}")
+@router.delete("/{periodo_id}", status_code=204)
 def delete_periodo_aula(periodo_id: int, db: Session = Depends(get_db)):
     db_periodo = db.query(models.PeriodoAula).filter(models.PeriodoAula.id == periodo_id).first()
     if db_periodo is None:
@@ -161,7 +161,7 @@ def delete_periodo_aula(periodo_id: int, db: Session = Depends(get_db)):
     db.delete(db_periodo)
     db.commit()
     
-    return {"message": "Período de aula removido com sucesso"}
+    return None
 
 @router.post("/auto-gerar", response_model=List[schemas.PeriodoAula])
 def auto_gerar_periodos_aula(

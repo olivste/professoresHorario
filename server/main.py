@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from database import models
 from database.database import engine
 from routes import auth, usuarios, professores, disciplinas, turmas, horarios, espacos, reservas, professor_disciplinas, turnos, periodos_aula
+from seed_curriculo import run as seed_curriculo_run
 from config import (
     ALLOWED_ORIGINS,
     AUTO_CREATE_TABLES,
@@ -69,6 +70,11 @@ def startup() -> None:
         models.Base.metadata.create_all(bind=engine)
     if CREATE_DEFAULT_ADMIN:
         create_admin_user()
+    # Populate baseline curriculum and periods every startup (idempotent)
+    try:
+        seed_curriculo_run()
+    except Exception as e:
+        logger.exception("Erro ao executar seed_curriculo: %s", e)
 
 # CORS middleware
 app.add_middleware(

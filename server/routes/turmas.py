@@ -39,12 +39,12 @@ def update_turma(turma_id: int, turma: schemas.TurmaUpdate, db: Session = Depend
         raise HTTPException(status_code=404, detail="Turma não encontrada")
     return db_turma
 
-@router.delete("/{turma_id}")
+@router.delete("/{turma_id}", status_code=204)
 def delete_turma(turma_id: int, db: Session = Depends(get_db)):
     success = crud.delete_turma(db, turma_id=turma_id)
     if not success:
         raise HTTPException(status_code=404, detail="Turma não encontrada")
-    return {"message": "Turma desativada com sucesso"}
+    return None
 
 @router.get("/{turma_id}/horarios/", response_model=List[schemas.Horario])
 def read_horarios_turma(turma_id: int, db: Session = Depends(get_db)):
