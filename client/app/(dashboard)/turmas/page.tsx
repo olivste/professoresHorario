@@ -140,10 +140,18 @@ export default function TurmasPage() {
     })
   }
 
-  const columns: ColumnDef<Turma>[] = [
+  function formatNome(row: Turma) {
+    // Remove prefixos como "1º - " ou "1ª - " do nome quando o ano já está em coluna própria
+    const trimmed = row.nome.trim()
+    const cleaned = trimmed.replace(/^\s*\d+[ºª]\s*-\s*/i, '')
+    return cleaned
+  }
+
+  const baseColumns: ColumnDef<Turma>[] = [
     {
       accessorKey: 'nome',
       header: 'Nome',
+      cell: ({ row }) => formatNome(row.original),
     },
     {
       accessorKey: 'ano',
@@ -181,6 +189,11 @@ export default function TurmasPage() {
       ),
     },
   ]
+
+  function getColumnsForTab(tab: string): ColumnDef<Turma>[] {
+    if (tab === 'todos') return baseColumns
+    return baseColumns.filter((c) => c.accessorKey !== 'turno.nome')
+  }
 
   return (
     <div className="space-y-6">
@@ -320,13 +333,13 @@ export default function TurmasPage() {
               </TabsList>
 
               <TabsContent value="todos" className="mt-4">
-                <DataTable columns={columns} data={turmas} />
+                <DataTable columns={getColumnsForTab('todos')} data={turmas} />
               </TabsContent>
 
               {turnos.map((turno) => (
                 <TabsContent key={turno.id} value={`turno-${turno.id}`} className="mt-4">
                   <DataTable
-                    columns={columns}
+                    columns={getColumnsForTab(`turno-${turno.id}`)}
                     data={turmas.filter((t) => t.turno_id === turno.id)}
                   />
                 </TabsContent>
