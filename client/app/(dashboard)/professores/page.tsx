@@ -12,7 +12,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { apiClient } from '@/lib/api-client'
 import { DataTable } from '@/components/data-table'
-import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react'
+import { Plus, Pencil, Trash2, Loader2, Timer, Calendar } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/hooks/use-toast'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -49,9 +49,13 @@ export default function ProfessoresPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isEditOpen, setIsEditOpen] = useState(false)
+  const [isCargaOpen, setIsCargaOpen] = useState(false)
+  const [isDispOpen, setIsDispOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [deleteId, setDeleteId] = useState<number | null>(null)
   const [editing, setEditing] = useState<Professor | null>(null)
+  const [editingCarga, setEditingCarga] = useState<{ id: number; carga: number } | null>(null)
+  const [editDispRows, setEditDispRows] = useState<Array<{ dia_semana: string; hora_inicio: string; hora_fim: string }>>([])
   const { toast } = useToast()
 
   const [formData, setFormData] = useState({
@@ -181,6 +185,53 @@ export default function ProfessoresPage() {
     }
   }
 
+  async function openDisponibilidade(p: Professor) {
+    setIsDispOpen(true)
+    // carregar disponibilidades existentes
+    try {
+      const dados = await apiClient.get<any[]>(`/professor-disponibilidades/por-professor/${p.id}`)
+      setEditDispRows(
+        ['segunda','terca','quarta','quinta','sexta','sabado'].map((dia)=>{
+          const found = dados.find((d:any)=> d.dia_semana === dia)
+          return { dia_semana: dia, hora_inicio: found?.hora_inicio || '', hora_fim: found?.hora_fim || '' }
+        })
+      )
+      setEditing(p)
+    } catch (e) {
+      setEditDispRows(['segunda','terca','quarta','quinta','sexta','sabado'].map((dia)=>({ dia_semana: dia, hora_inicio: '', hora_fim: '' })))
+      setEditing(p)
+    }
+  }
+
+  async function saveDisponibilidade() {
+    if (!editing) return
+    setIsSaving(true)
+    try {
+      // apagar todas disponibilidades existentes e recriar simples
+      const existentes = await apiClient.get<any[]>(`/professor-disponibilidades/por-professor/${editing.id}`)
+      for (const d of existentes) {
+        await apiClient.delete(`/professor-disponibilidades/${d.id}`)
+      }
+      for (const r of editDispRows) {
+        if (r.hora_inicio && r.hora_fim) {
+          await apiClient.post('/professor-disponibilidades/', {
+            professor_id: editing.id,
+            dia_semana: r.dia_semana,
+            hora_inicio: r.hora_inicio,
+            hora_fim: r.hora_fim,
+          })
+        }
+      }
+      toast({ title: 'Sucesso', description: 'Disponibilidade atualizada' })
+      setIsDispOpen(false)
+      setEditing(null)
+    } catch (error:any) {
+      toast({ title: 'Erro', description: error?.message || 'Erro ao salvar disponibilidade', variant: 'destructive' })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
   async function handleUpdate(e: React.FormEvent) {
     e.preventDefault()
     if (!editing) return
@@ -261,6 +312,25 @@ export default function ProfessoresPage() {
             }}
           >
             <Pencil className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              setEditingCarga({ id: row.original.id, carga: row.original.carga_horaria_semanal })
+              setIsCargaOpen(true)
+            }}
+            aria-label="Editar carga horária"
+          >
+            <Timer className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => openDisponibilidade(row.original)}
+            aria-label="Disponibilidade"
+          >
+            <Calendar className="h-4 w-4" />
           </Button>
           <Button
             variant="ghost"
@@ -510,6 +580,79 @@ export default function ProfessoresPage() {
                 </Button>
               </div>
             </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Editar Carga Horária */}
+      <Dialog open={isCargaOpen} onOpenChange={(open)=>{ setIsCargaOpen(open); if(!open) setEditingCarga(null) }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Editar Carga Horária</DialogTitle>
+            <DialogDescription>Atualize apenas a carga horária semanal</DialogDescription>
+          </DialogHeader>
+          {editingCarga && (
+            <form onSubmit={async (e)=>{
+              e.preventDefault()
+              setIsSaving(true)
+              try {
+                await apiClient.put(`/professores/${editingCarga.id}/`, { carga_horaria_semanal: editingCarga.carga })
+                toast({ title: 'Sucesso', description: 'Carga horária atualizada' })
+                setIsCargaOpen(false)
+                setEditingCarga(null)
+                loadProfessores()
+              } catch (error:any) {
+                toast({ title: 'Erro', description: error?.message || 'Erro ao atualizar carga horária', variant: 'destructive' })
+              } finally { setIsSaving(false) }
+            }} className="space-y-4">
+              <div className="space-y-2">
+                <Label>Carga Horária Semanal*</Label>
+                <Input type="number" value={editingCarga.carga} onChange={(e)=> setEditingCarga({ ...editingCarga, carga: Number(e.target.value) })} required />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button type="button" variant="outline" onClick={()=> setIsCargaOpen(false)} disabled={isSaving}>Cancelar</Button>
+                <Button type="submit" disabled={isSaving}>{isSaving ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Salvando...</>) : 'Salvar'}</Button>
+              </div>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Disponibilidade do Professor */}
+      <Dialog open={isDispOpen} onOpenChange={(open)=>{ setIsDispOpen(open); if(!open) { setEditing(null); } }}>
+        <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Disponibilidade</DialogTitle>
+            <DialogDescription>Marque quando o professor está na escola</DialogDescription>
+          </DialogHeader>
+          {editing && (
+            <div className="space-y-4">
+              {editDispRows.map((row, idx)=> (
+                <div key={row.dia_semana} className="grid grid-cols-3 gap-3 items-end">
+                  <div className="col-span-1"><Label>{row.dia_semana[0].toUpperCase()+row.dia_semana.slice(1)}</Label></div>
+                  <div className="space-y-2">
+                    <Label>Início</Label>
+                    <Input type="time" value={row.hora_inicio} onChange={(e)=>{
+                      const copy = [...editDispRows]
+                      copy[idx] = { ...copy[idx], hora_inicio: e.target.value }
+                      setEditDispRows(copy)
+                    }} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Fim</Label>
+                    <Input type="time" value={row.hora_fim} onChange={(e)=>{
+                      const copy = [...editDispRows]
+                      copy[idx] = { ...copy[idx], hora_fim: e.target.value }
+                      setEditDispRows(copy)
+                    }} />
+                  </div>
+                </div>
+              ))}
+              <div className="flex justify-end gap-2">
+                <Button type="button" variant="outline" onClick={()=> setIsDispOpen(false)} disabled={isSaving}>Cancelar</Button>
+                <Button onClick={saveDisponibilidade} disabled={isSaving}>{isSaving ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Salvando...</>) : 'Salvar'}</Button>
+              </div>
+            </div>
           )}
         </DialogContent>
       </Dialog>

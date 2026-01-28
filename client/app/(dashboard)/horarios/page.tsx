@@ -42,6 +42,7 @@ interface Disciplina {
 interface Turma {
   id: number
   nome: string
+  turno_id: number
 }
 
 interface Turno {
@@ -166,9 +167,10 @@ export default function HorariosPage() {
     }
   }, [selectedPeriodoId, periodos])
 
-  // Ao trocar o turno, limpa seleção de período
+  // Ao trocar o turno, limpa seleção de período e turma
   useEffect(() => {
     setSelectedPeriodoId('')
+    setFormData((prev) => ({ ...prev, turma_id: '' }))
   }, [formData.turno_id])
 
   const periodosFiltrados = periodos.filter(
@@ -188,6 +190,34 @@ export default function HorariosPage() {
   function professorsSafeFilter(list: Professor[], allowed: Set<number>) {
     return list.filter((p) => allowed.has(p.id))
   }
+
+  const turmasFiltradas = (() => {
+    const profId = Number(formData.professor_id)
+    const turnoId = Number(formData.turno_id)
+    // Exigir professor e turno selecionados
+    if (!profId || !turnoId) return []
+    const discDoProf = new Set(
+      profDiscLinks
+        .filter((l) => l.professor_id === profId)
+        .map((l) => l.disciplina_id)
+    )
+    if (discDoProf.size === 0) return []
+    const turmaParaDiscs = new Map<number, Set<number>>()
+    for (const l of turmaDiscLinks) {
+      const set = turmaParaDiscs.get(l.turma_id) || new Set<number>()
+      set.add(l.disciplina_id)
+      turmaParaDiscs.set(l.turma_id, set)
+    }
+    return turmas.filter((t) => {
+      if (t.turno_id !== turnoId) return false
+      const discs = turmaParaDiscs.get(t.id)
+      if (!discs) return false
+      for (const d of discDoProf) {
+        if (discs.has(d)) return true
+      }
+      return false
+    })
+  })()
 
   const disciplinasFiltradas = (() => {
     const profId = Number(formData.professor_id)
@@ -379,7 +409,10 @@ export default function HorariosPage() {
                   <Label htmlFor="professor">Professor*</Label>
                   <Select
                     value={formData.professor_id}
-                    onValueChange={(value) => setFormData({ ...formData, professor_id: value })}
+                    onValueChange={(value) => {
+                      // Ao trocar professor, limpar disciplina selecionada
+                      setFormData({ ...formData, professor_id: value, disciplina_id: '' })
+                    }}
                     required
                   >
                     <SelectTrigger>
@@ -397,20 +430,30 @@ export default function HorariosPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="disciplina">Disciplina*</Label>
+                  <p className="text-xs text-muted-foreground">Lista filtrada pelas disciplinas do professor e turma.</p>
                   <Select
                     value={formData.disciplina_id}
                     onValueChange={(value) => setFormData({ ...formData, disciplina_id: value })}
                     required
+                    disabled={!formData.professor_id}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione uma disciplina" />
+                      <SelectValue placeholder={
+                        !formData.professor_id ? 'Selecione o professor primeiro' : 'Selecione uma disciplina'
+                      } />
                     </SelectTrigger>
-                    <SelectContent>
-                      {disciplinasFiltradas.map((disc) => (
-                        <SelectItem key={disc.id} value={disc.id.toString()}>
-                          {disc.codigo ? `${disc.codigo} - ${disc.nome}` : disc.nome}
+                    <SelectContent className="max-h-64 overflow-y-auto">
+                      {disciplinasFiltradas.length === 0 ? (
+                        <SelectItem value="__empty" disabled>
+                          Nenhuma disciplina vinculada
                         </SelectItem>
-                      ))}
+                      ) : (
+                        disciplinasFiltradas.map((disc) => (
+                          <SelectItem key={disc.id} value={disc.id.toString()}>
+                            {disc.codigo ? `${disc.codigo} - ${disc.nome}` : disc.nome}
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -421,16 +464,29 @@ export default function HorariosPage() {
                     value={formData.turma_id}
                     onValueChange={(value) => setFormData({ ...formData, turma_id: value })}
                     required
+                    disabled={!formData.professor_id || !formData.turno_id}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione uma turma" />
+                      <SelectValue placeholder={
+                        !formData.professor_id
+                          ? 'Selecione o professor primeiro'
+                          : !formData.turno_id
+                          ? 'Selecione o turno primeiro'
+                          : 'Selecione uma turma'
+                      } />
                     </SelectTrigger>
                     <SelectContent>
-                      {turmas.map((turma) => (
-                        <SelectItem key={turma.id} value={turma.id.toString()}>
-                          {turma.nome}
+                      {turmasFiltradas.length === 0 ? (
+                        <SelectItem value="__empty" disabled>
+                          Nenhuma turma do turno com disciplinas do professor
                         </SelectItem>
-                      ))}
+                      ) : (
+                        turmasFiltradas.map((turma) => (
+                          <SelectItem key={turma.id} value={turma.id.toString()}>
+                            {turma.nome}
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -479,6 +535,7 @@ export default function HorariosPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="periodo-select">Período de Aula*</Label>
+                  <p className="text-xs text-muted-foreground">Selecionar período define automaticamente início e fim.</p>
                   <Select
                     value={selectedPeriodoId}
                     onValueChange={(value) => setSelectedPeriodoId(value)}
