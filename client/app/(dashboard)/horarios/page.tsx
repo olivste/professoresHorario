@@ -99,7 +99,8 @@ export default function HorariosPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [deleteId, setDeleteId] = useState<number | null>(null)
   const [selectedPeriodoId, setSelectedPeriodoId] = useState<string>('')
-  const [usarPeriodo, setUsarPeriodo] = useState<boolean>(false)
+  // Sempre usar período para definir hora início/fim
+  const [usarPeriodo] = useState<boolean>(true)
   const { toast } = useToast()
 
   const [formData, setFormData] = useState({
@@ -110,7 +111,6 @@ export default function HorariosPage() {
     dia_semana: '',
     hora_inicio: '',
     hora_fim: '',
-    sala: '',
     observacoes: '',
   })
 
@@ -155,7 +155,6 @@ export default function HorariosPage() {
 
   // Atualiza hora início/fim ao selecionar um período
   useEffect(() => {
-    if (!usarPeriodo) return
     const id = Number(selectedPeriodoId)
     const periodo = periodos.find((p) => p.id === id)
     if (periodo) {
@@ -165,7 +164,7 @@ export default function HorariosPage() {
         hora_fim: periodo.hora_fim,
       }))
     }
-  }, [selectedPeriodoId, usarPeriodo, periodos])
+  }, [selectedPeriodoId, periodos])
 
   // Ao trocar o turno, limpa seleção de período
   useEffect(() => {
@@ -221,6 +220,10 @@ export default function HorariosPage() {
     setIsSaving(true)
 
     try {
+      // Exigir período selecionado para definir horas
+      if (!selectedPeriodoId) {
+        throw new Error('Selecione um período de aula')
+      }
       // Client-side guard: ensure vínculos exist to avoid 400
       const profId = Number(formData.professor_id)
       const discId = Number(formData.disciplina_id)
@@ -287,7 +290,6 @@ export default function HorariosPage() {
       dia_semana: '',
       hora_inicio: '',
       hora_fim: '',
-      sala: '',
       observacoes: '',
     })
   }
@@ -485,63 +487,30 @@ export default function HorariosPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="periodo-select">Usar horário de Período</Label>
-                    <Switch
-                      id="usar_periodo"
-                      checked={usarPeriodo}
-                      onCheckedChange={(checked) => setUsarPeriodo(checked)}
-                    />
-                  </div>
-                  {usarPeriodo && (
-                    <Select
-                      value={selectedPeriodoId}
-                      onValueChange={(value) => setSelectedPeriodoId(value)}
-                      disabled={!formData.turno_id || periodosFiltrados.length === 0}
-                    >
-                      <SelectTrigger id="periodo-select">
-                        <SelectValue placeholder={
-                          !formData.turno_id
-                            ? 'Selecione o turno primeiro'
-                            : periodosFiltrados.length === 0
-                            ? 'Nenhum período de aula disponível'
-                            : 'Selecione um período'
-                        } />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {periodosFiltrados.map((p) => (
-                          <SelectItem key={p.id} value={p.id.toString()}>
-                            {p.numero_aula}ª aula • {p.hora_inicio} — {p.hora_fim}
-                            {p.descricao ? ` • ${p.descricao}` : ''}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="hora_inicio">Hora Início*</Label>
-                  <Input
-                    id="hora_inicio"
-                    type="time"
-                    required
-                    disabled={usarPeriodo}
-                    value={formData.hora_inicio}
-                    onChange={(e) => setFormData({ ...formData, hora_inicio: e.target.value })}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="hora_fim">Hora Fim*</Label>
-                  <Input
-                    id="hora_fim"
-                    type="time"
-                    required
-                    disabled={usarPeriodo}
-                    value={formData.hora_fim}
-                    onChange={(e) => setFormData({ ...formData, hora_fim: e.target.value })}
-                  />
+                  <Label htmlFor="periodo-select">Período de Aula*</Label>
+                  <Select
+                    value={selectedPeriodoId}
+                    onValueChange={(value) => setSelectedPeriodoId(value)}
+                    disabled={!formData.turno_id || periodosFiltrados.length === 0}
+                  >
+                    <SelectTrigger id="periodo-select">
+                      <SelectValue placeholder={
+                        !formData.turno_id
+                          ? 'Selecione o turno primeiro'
+                          : periodosFiltrados.length === 0
+                          ? 'Nenhum período de aula disponível'
+                          : 'Selecione um período'
+                      } />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {periodosFiltrados.map((p) => (
+                        <SelectItem key={p.id} value={p.id.toString()}>
+                          {p.numero_aula}ª aula • {p.hora_inicio} — {p.hora_fim}
+                          {p.descricao ? ` • ${p.descricao}` : ''}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
