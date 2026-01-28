@@ -199,6 +199,29 @@ class ProfessorBloqueio(Base):
 
     professor = relationship("Professor")
 
+class ProfessorDisponibilidade(Base):
+    __tablename__ = "professor_disponibilidades"
+
+    id = Column(Integer, primary_key=True, index=True)
+    professor_id = Column(Integer, ForeignKey("professores.id"), nullable=False)
+    dia_semana = Column(
+        Enum(
+            DiaSemanaEnum,
+            values_callable=lambda enum_cls: [e.value for e in enum_cls],
+            validate_strings=True,
+            native_enum=False,
+            name="diasemanaenum",
+        ),
+        nullable=False,
+    )
+    hora_inicio = Column(Time, nullable=False)
+    hora_fim = Column(Time, nullable=False)
+    categoria = Column(String(100))
+    observacoes = Column(Text)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    professor = relationship("Professor")
+
 class Horario(Base):
     __tablename__ = "horarios"
 

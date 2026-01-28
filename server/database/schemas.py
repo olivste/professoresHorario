@@ -293,6 +293,32 @@ class ProfessorBloqueio(ProfessorBloqueioBase):
     class Config:
         from_attributes = True
 
+# ProfessorDisponibilidade schemas
+class ProfessorDisponibilidadeBase(BaseModel):
+    professor_id: int
+    dia_semana: DiaSemanaEnum
+    hora_inicio: time
+    hora_fim: time
+    categoria: Optional[str] = None
+    observacoes: Optional[str] = None
+
+class ProfessorDisponibilidadeCreate(ProfessorDisponibilidadeBase):
+    pass
+
+class ProfessorDisponibilidadeUpdate(BaseModel):
+    dia_semana: Optional[DiaSemanaEnum] = None
+    hora_inicio: Optional[time] = None
+    hora_fim: Optional[time] = None
+    categoria: Optional[str] = None
+    observacoes: Optional[str] = None
+
+class ProfessorDisponibilidade(ProfessorDisponibilidadeBase):
+    id: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
 # Horário schemas
 class HorarioBase(BaseModel):
     professor_id: int

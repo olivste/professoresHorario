@@ -249,6 +249,38 @@ def delete_professor_bloqueio(db: Session, bloqueio_id: int):
         return True
     return False
 
+# ProfessorDisponibilidade CRUD operations
+def create_professor_disponibilidade(db: Session, disp: schemas.ProfessorDisponibilidadeCreate):
+    db_d = models.ProfessorDisponibilidade(**disp.model_dump())
+    db.add(db_d)
+    db.commit()
+    db.refresh(db_d)
+    return db_d
+
+def get_professor_disponibilidades(db: Session, skip: int = 0, limit: int = 100):
+    return db.query(models.ProfessorDisponibilidade).offset(skip).limit(limit).all()
+
+def get_professor_disponibilidades_por_professor(db: Session, professor_id: int):
+    return db.query(models.ProfessorDisponibilidade).filter(models.ProfessorDisponibilidade.professor_id == professor_id).all()
+
+def update_professor_disponibilidade(db: Session, disp_id: int, disp: schemas.ProfessorDisponibilidadeUpdate):
+    db_d = db.query(models.ProfessorDisponibilidade).filter(models.ProfessorDisponibilidade.id == disp_id).first()
+    if db_d:
+        update_data = disp.model_dump(exclude_unset=True)
+        for field, value in update_data.items():
+            setattr(db_d, field, value)
+        db.commit()
+        db.refresh(db_d)
+    return db_d
+
+def delete_professor_disponibilidade(db: Session, disp_id: int):
+    db_d = db.query(models.ProfessorDisponibilidade).filter(models.ProfessorDisponibilidade.id == disp_id).first()
+    if db_d:
+        db.delete(db_d)
+        db.commit()
+        return True
+    return False
+
 # Horário CRUD operations
 def get_horario(db: Session, horario_id: int):
     return db.query(models.Horario).filter(models.Horario.id == horario_id).first()
@@ -306,6 +338,28 @@ def verificar_bloqueio_professor(
             and_(models.ProfessorBloqueio.hora_inicio < hora_fim, models.ProfessorBloqueio.hora_fim >= hora_fim),
             and_(models.ProfessorBloqueio.hora_inicio >= hora_inicio, models.ProfessorBloqueio.hora_fim <= hora_fim),
         ),
+    ).first() is not None
+
+def verificar_disponibilidade_professor(
+    db: Session,
+    professor_id: int,
+    dia_semana,
+    hora_inicio: time,
+    hora_fim: time,
+):
+    # If any disponibilidade exists for that day, require overlap with at least one
+    query_dia = db.query(models.ProfessorDisponibilidade).filter(
+        models.ProfessorDisponibilidade.professor_id == professor_id,
+        models.ProfessorDisponibilidade.dia_semana == dia_semana,
+    )
+    if query_dia.count() == 0:
+        return True
+    return query_dia.filter(
+        or_(
+            and_(models.ProfessorDisponibilidade.hora_inicio <= hora_inicio, models.ProfessorDisponibilidade.hora_fim > hora_inicio),
+            and_(models.ProfessorDisponibilidade.hora_inicio < hora_fim, models.ProfessorDisponibilidade.hora_fim >= hora_fim),
+            and_(models.ProfessorDisponibilidade.hora_inicio >= hora_inicio, models.ProfessorDisponibilidade.hora_fim <= hora_fim),
+        )
     ).first() is not None
 
 def create_horario(db: Session, horario: schemas.HorarioCreate):

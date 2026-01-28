@@ -30,14 +30,14 @@ import {
 interface Professor {
   id: number
   departamento: string
-  especializacao: string
+  especializacao?: string
   carga_horaria_semanal: number
   observacoes?: string
   usuario: {
     id: number
     nome: string
     username: string
-    email: string
+    email?: string
     telefone?: string
     role: string
     ativo: boolean
@@ -66,11 +66,28 @@ export default function ProfessoresPage() {
       role: 'PROFESSOR',
       ativo: true,
     },
+    disponibilidades: [] as Array<{ dia_semana: string; hora_inicio: string; hora_fim: string }>,
   })
 
   useEffect(() => {
     loadProfessores()
   }, [])
+
+  // Auto-generate username as first.last when name changes
+  useEffect(() => {
+    const nome = formData.usuario.nome.trim()
+    if (!nome) return
+    const parts = nome.split(/\s+/)
+    const first = parts[0] || ''
+    const last = parts.length > 1 ? parts[parts.length - 1] : ''
+    const baseUser = (first + '.' + last).toLowerCase().normalize('NFD').replace(/[^a-z\.]/g, '')
+    if (!formData.usuario.username) {
+      setFormData({
+        ...formData,
+        usuario: { ...formData.usuario, username: baseUser },
+      })
+    }
+  }, [formData.usuario.nome])
 
   async function loadProfessores() {
     try {
@@ -92,7 +109,39 @@ export default function ProfessoresPage() {
     setIsSaving(true)
 
     try {
-      await apiClient.post('/professores/', formData)
+      // Auto-generate username and email if not provided
+      let nome = formData.usuario.nome.trim()
+      const parts = nome.split(/\s+/)
+      const first = parts[0] || ''
+      const last = parts.length > 1 ? parts[parts.length - 1] : ''
+      const baseUser = (first + '.' + last).toLowerCase().normalize('NFD').replace(/[^a-z\.]/g, '')
+      const usuarioPayload = {
+        ...formData.usuario,
+        username: formData.usuario.username || baseUser,
+        email: formData.usuario.email || `${baseUser || 'user'}@temp.local`,
+        telefone: undefined,
+      }
+
+      const profPayload = {
+        departamento: formData.departamento,
+        especializacao: undefined,
+        carga_horaria_semanal: formData.carga_horaria_semanal,
+        observacoes: formData.observacoes,
+        usuario: usuarioPayload,
+      }
+
+      const created = await apiClient.post<Professor>('/professores/', profPayload)
+
+      // Persist disponibilidades
+      const professorId = created.id
+      for (const d of formData.disponibilidades) {
+        await apiClient.post('/professor-disponibilidades/', {
+          professor_id: professorId,
+          dia_semana: d.dia_semana,
+          hora_inicio: d.hora_inicio,
+          hora_fim: d.hora_fim,
+        })
+      }
       toast({
         title: 'Sucesso',
         description: 'Professor criado com sucesso',
@@ -100,10 +149,10 @@ export default function ProfessoresPage() {
       setIsDialogOpen(false)
       resetForm()
       loadProfessores()
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: 'Erro',
-        description: 'Erro ao criar professor',
+        description: error?.message || 'Erro ao criar professor',
         variant: 'destructive',
       })
     } finally {
@@ -145,6 +194,7 @@ export default function ProfessoresPage() {
         role: 'PROFESSOR',
         ativo: true,
       },
+      disponibilidades: [],
     })
   }
 
@@ -152,14 +202,7 @@ export default function ProfessoresPage() {
     {
       accessorKey: 'usuario.nome',
       header: 'Nome',
-    },
-    {
-      accessorKey: 'departamento',
-      header: 'Departamento',
-    },
-    {
-      accessorKey: 'especializacao',
-      header: 'Especialização',
+    // Removed Especialização and Email columns per request
     },
     {
       accessorKey: 'carga_horaria_semanal',
@@ -255,34 +298,6 @@ export default function ProfessoresPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email*</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      required
-                      value={formData.usuario.email}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          usuario: { ...formData.usuario, email: e.target.value },
-                        })
-                      }
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="telefone">Telefone</Label>
-                    <Input
-                      id="telefone"
-                      value={formData.usuario.telefone}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          usuario: { ...formData.usuario, telefone: e.target.value },
-                        })
-                      }
-                    />
-                  </div>
-                  <div className="space-y-2">
                     <Label htmlFor="senha">Senha*</Label>
                     <Input
                       id="senha"
@@ -315,17 +330,6 @@ export default function ProfessoresPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="especializacao">Especialização*</Label>
-                    <Input
-                      id="especializacao"
-                      required
-                      value={formData.especializacao}
-                      onChange={(e) =>
-                        setFormData({ ...formData, especializacao: e.target.value })
-                      }
-                    />
-                  </div>
-                  <div className="space-y-2">
                     <Label htmlFor="carga_horaria">Carga Horária Semanal*</Label>
                     <Input
                       id="carga_horaria"
@@ -350,6 +354,37 @@ export default function ProfessoresPage() {
                       setFormData({ ...formData, observacoes: e.target.value })
                     }
                   />
+                </div>
+                <div className="space-y-4">
+                  <h4 className="text-sm font-semibold">Disponibilidade Semanal</h4>
+                  <p className="text-muted-foreground text-xs">Adicione períodos em que o professor está disponível.</p>
+                  {['segunda','terca','quarta','quinta','sexta','sabado'].map((dia) => (
+                    <div key={dia} className="grid grid-cols-3 gap-3 items-end">
+                      <div className="col-span-1"><Label>{dia[0].toUpperCase()+dia.slice(1)}</Label></div>
+                      <div className="space-y-2">
+                        <Label>Início</Label>
+                        <Input type="time" onChange={(e)=>{
+                          const idx = formData.disponibilidades.findIndex(d=>d.dia_semana===dia)
+                          const novo = { dia_semana: dia, hora_inicio: e.target.value, hora_fim: formData.disponibilidades[idx]?.hora_fim || '' }
+                          setFormData({ ...formData, disponibilidades: [
+                            ...formData.disponibilidades.filter(d=>d.dia_semana!==dia),
+                            novo,
+                          ]})
+                        }} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Fim</Label>
+                        <Input type="time" onChange={(e)=>{
+                          const idx = formData.disponibilidades.findIndex(d=>d.dia_semana===dia)
+                          const novo = { dia_semana: dia, hora_inicio: formData.disponibilidades[idx]?.hora_inicio || '', hora_fim: e.target.value }
+                          setFormData({ ...formData, disponibilidades: [
+                            ...formData.disponibilidades.filter(d=>d.dia_semana!==dia),
+                            novo,
+                          ]})
+                        }} />
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
 

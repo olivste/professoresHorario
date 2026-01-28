@@ -45,6 +45,16 @@ def create_horario(horario: schemas.HorarioCreate, db: Session = Depends(get_db)
     if not turma_disc:
         raise HTTPException(status_code=400, detail="Disciplina não vinculada à turma")
 
+    # Disponibilidade do professor (quando configurada)
+    if not crud.verificar_disponibilidade_professor(
+        db,
+        professor_id=horario.professor_id,
+        dia_semana=horario.dia_semana,
+        hora_inicio=horario.hora_inicio,
+        hora_fim=horario.hora_fim,
+    ):
+        raise HTTPException(status_code=400, detail="Professor sem disponibilidade nesse horário")
+
     # Bloqueio de disponibilidade do professor
     if crud.verificar_bloqueio_professor(
         db,
@@ -100,6 +110,16 @@ def update_horario(horario_id: int, horario: schemas.HorarioUpdate, db: Session 
     ).first()
     if not turma_disc:
         raise HTTPException(status_code=400, detail="Disciplina não vinculada à turma")
+
+    # Disponibilidade do professor (quando configurada)
+    if not crud.verificar_disponibilidade_professor(
+        db,
+        professor_id=professor_id,
+        dia_semana=dia_semana,
+        hora_inicio=hora_inicio,
+        hora_fim=hora_fim,
+    ):
+        raise HTTPException(status_code=400, detail="Professor sem disponibilidade nesse horário")
 
     # Bloqueio de disponibilidade do professor
     if crud.verificar_bloqueio_professor(

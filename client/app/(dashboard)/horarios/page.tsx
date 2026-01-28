@@ -93,6 +93,7 @@ export default function HorariosPage() {
   const [turnos, setTurnos] = useState<Turno[]>([])
   const [periodos, setPeriodos] = useState<PeriodoAula[]>([])
   const [profDiscLinks, setProfDiscLinks] = useState<Array<{ professor_id: number; disciplina_id: number }>>([])
+  const [turmaDiscLinks, setTurmaDiscLinks] = useState<Array<{ turma_id: number; disciplina_id: number }>>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -119,7 +120,7 @@ export default function HorariosPage() {
 
   async function loadData() {
     try {
-      const [horariosData, professoresData, disciplinasData, turmasData, turnosData, periodosData, linksData] = await Promise.all([
+      const [horariosData, professoresData, disciplinasData, turmasData, turnosData, periodosData, linksData, turmaLinksData] = await Promise.all([
         apiClient.get<Horario[]>('/horarios/?limit=1000'),
         apiClient.get<Professor[]>('/professores/?limit=1000'),
         apiClient.get<Disciplina[]>('/disciplinas/?limit=1000'),
@@ -127,6 +128,7 @@ export default function HorariosPage() {
         apiClient.get<Turno[]>('/turnos/?limit=1000'),
         apiClient.get<PeriodoAula[]>('/periodos-aula/?limit=1000'),
         apiClient.get<any[]>('/professor-disciplinas/'),
+        apiClient.get<any[]>('/turma-disciplinas/'),
       ])
       setHorarios(horariosData)
       setProfessores(professoresData)
@@ -136,6 +138,9 @@ export default function HorariosPage() {
       setPeriodos(periodosData)
       setProfDiscLinks(
         linksData.map((l: any) => ({ professor_id: l.professor_id, disciplina_id: l.disciplina_id }))
+      )
+      setTurmaDiscLinks(
+        turmaLinksData.map((l: any) => ({ turma_id: l.turma_id, disciplina_id: l.disciplina_id }))
       )
     } catch (error) {
       toast({
@@ -187,11 +192,27 @@ export default function HorariosPage() {
 
   const disciplinasFiltradas = (() => {
     const profId = Number(formData.professor_id)
-    if (!profId || profDiscLinks.length === 0) return disciplinas
-    const allowedDiscIds = new Set(
-      profDiscLinks.filter((l) => l.professor_id === profId).map((l) => l.disciplina_id)
-    )
-    const result = disciplinas.filter((d) => allowedDiscIds.has(d.id))
+    const turmaId = Number(formData.turma_id)
+    let allowedByProf: Set<number> | null = null
+    let allowedByTurma: Set<number> | null = null
+
+    if (profId && profDiscLinks.length > 0) {
+      allowedByProf = new Set(
+        profDiscLinks.filter((l) => l.professor_id === profId).map((l) => l.disciplina_id)
+      )
+    }
+    if (turmaId && turmaDiscLinks.length > 0) {
+      allowedByTurma = new Set(
+        turmaDiscLinks.filter((l) => l.turma_id === turmaId).map((l) => l.disciplina_id)
+      )
+    }
+
+    // If both filters exist, intersect; otherwise use the one that exists
+    const result = disciplinas.filter((d) => {
+      const byProf = !allowedByProf || allowedByProf.has(d.id)
+      const byTurma = !allowedByTurma || allowedByTurma.has(d.id)
+      return byProf && byTurma
+    })
     return result.length > 0 ? result : disciplinas
   })()
 
@@ -200,6 +221,19 @@ export default function HorariosPage() {
     setIsSaving(true)
 
     try {
+      // Client-side guard: ensure vínculos exist to avoid 400
+      const profId = Number(formData.professor_id)
+      const discId = Number(formData.disciplina_id)
+      const turmaId = Number(formData.turma_id)
+      const hasProfDisc = profDiscLinks.some((l) => l.professor_id === profId && l.disciplina_id === discId)
+      const hasTurmaDisc = turmaDiscLinks.some((l) => l.turma_id === turmaId && l.disciplina_id === discId)
+      if (!hasProfDisc) {
+        throw new Error('Professor não vinculado à disciplina selecionada')
+      }
+      if (!hasTurmaDisc) {
+        throw new Error('Disciplina não está vinculada à turma selecionada')
+      }
+
       await apiClient.post('/horarios/', {
         ...formData,
         professor_id: Number(formData.professor_id),
@@ -214,10 +248,10 @@ export default function HorariosPage() {
       setIsDialogOpen(false)
       resetForm()
       loadData()
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: 'Erro',
-        description: 'Erro ao criar horário',
+        description: error?.message || 'Erro ao criar horário',
         variant: 'destructive',
       })
     } finally {

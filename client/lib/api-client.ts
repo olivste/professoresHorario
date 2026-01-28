@@ -7,10 +7,23 @@ const baseUrl = typeof window === 'undefined'
 
 export class ApiClient {
   private getHeaders(): HeadersInit {
-    const token = localStorage.getItem('auth_token')
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
     return {
-      ...(token && { Authorization: `Bearer ${token}` }),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     }
+  }
+
+  private async handleError(response: Response): Promise<never> {
+    let message = `API Error: ${response.status} ${response.statusText}`
+    try {
+      const text = await response.text()
+      if (text) {
+        const data = JSON.parse(text)
+        if (data?.detail) message = Array.isArray(data.detail) ? data.detail.map((d: any) => d.msg || d).join('; ') : data.detail
+        else if (data?.error) message = data.error
+      }
+    } catch {}
+    throw new Error(message)
   }
 
   async get<T>(endpoint: string): Promise<T> {
@@ -18,9 +31,7 @@ export class ApiClient {
       headers: this.getHeaders(),
     })
     
-    if (!response.ok) {
-      throw new Error(`API Error: ${response.statusText}`)
-    }
+    if (!response.ok) return this.handleError(response)
     
     return response.json()
   }
@@ -32,9 +43,7 @@ export class ApiClient {
       body: JSON.stringify(data),
     })
     
-    if (!response.ok) {
-      throw new Error(`API Error: ${response.statusText}`)
-    }
+    if (!response.ok) return this.handleError(response)
     
     return response.json()
   }
@@ -46,9 +55,7 @@ export class ApiClient {
       ...(data && { body: JSON.stringify(data) }),
     })
     
-    if (!response.ok) {
-      throw new Error(`API Error: ${response.statusText}`)
-    }
+    if (!response.ok) return this.handleError(response)
     
     return response.json()
   }
@@ -59,9 +66,7 @@ export class ApiClient {
       headers: this.getHeaders(),
     })
     
-    if (!response.ok) {
-      throw new Error(`API Error: ${response.statusText}`)
-    }
+    if (!response.ok) return this.handleError(response)
     
     if (response.status === 204) {
       // No Content

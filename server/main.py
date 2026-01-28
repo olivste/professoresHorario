@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from database import models
 from database.database import engine
-from routes import auth, usuarios, professores, disciplinas, turmas, horarios, espacos, reservas, professor_disciplinas, turnos, periodos_aula, turma_disciplinas, professor_bloqueios
+from routes import auth, usuarios, professores, disciplinas, turmas, horarios, espacos, reservas, professor_disciplinas, turnos, periodos_aula, turma_disciplinas, professor_bloqueios, professor_disponibilidades
 from seed_curriculo import run as seed_curriculo_run
 from config import (
     ALLOWED_ORIGINS,
@@ -108,3 +108,4 @@ app.include_router(reservas.router)
 app.include_router(professor_disciplinas.router)
 app.include_router(turma_disciplinas.router)
 app.include_router(professor_bloqueios.router)
+app.include_router(professor_disponibilidades.router)
