@@ -71,9 +71,9 @@ export default function ReservasPage() {
   async function loadData() {
     try {
       const [reservasData, espacosData, usuariosData] = await Promise.all([
-        apiClient.get<Reserva[]>('/reservas?limit=1000'),
-        apiClient.get<Espaco[]>('/espacos?limit=1000'),
-        apiClient.get<Usuario[]>('/usuarios?limit=1000'),
+        apiClient.get<Reserva[]>('/reservas/?limit=1000'),
+        apiClient.get<Espaco[]>('/espacos/?limit=1000'),
+        apiClient.get<Usuario[]>('/usuarios/?limit=1000'),
       ])
       setReservas(reservasData)
       setEspacos(espacosData)
@@ -94,7 +94,7 @@ export default function ReservasPage() {
     setIsSaving(true)
 
     try {
-      await apiClient.post(`/reservas?solicitante_id=${user?.id}`, {
+      await apiClient.post(`/reservas/?solicitante_id=${user?.id}`, {
         ...formData,
         espaco_id: Number(formData.espaco_id),
       })
@@ -118,7 +118,7 @@ export default function ReservasPage() {
 
   async function handleUpdateStatus(id: number, status: string) {
     try {
-      await apiClient.put(`/reservas/${id}/status?status=${status}&aprovador_id=${user?.id}`)
+      await apiClient.put(`/reservas/${id}/status/?status=${status}&aprovador_id=${user?.id}`)
       toast({
         title: 'Sucesso',
         description: `Reserva ${status} com sucesso`,

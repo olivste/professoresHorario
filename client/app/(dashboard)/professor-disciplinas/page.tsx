@@ -68,9 +68,9 @@ export default function ProfessorDisciplinasPage() {
   async function loadData() {
     try {
       const [vinculosData, professoresData, disciplinasData] = await Promise.all([
-        apiClient.get<ProfessorDisciplina[]>('/professor-disciplinas?limit=1000'),
-        apiClient.get<Professor[]>('/professores?limit=1000'),
-        apiClient.get<Disciplina[]>('/disciplinas?limit=1000'),
+        apiClient.get<ProfessorDisciplina[]>('/professor-disciplinas/?limit=1000'),
+        apiClient.get<Professor[]>('/professores/?limit=1000'),
+        apiClient.get<Disciplina[]>('/disciplinas/?limit=1000'),
       ])
       setVinculos(vinculosData)
       setProfessores(professoresData)
@@ -91,7 +91,7 @@ export default function ProfessorDisciplinasPage() {
     setIsSaving(true)
 
     try {
-      await apiClient.post('/professor-disciplinas', {
+      await apiClient.post('/professor-disciplinas/', {
         ...formData,
         professor_id: Number(formData.professor_id),
         disciplina_id: Number(formData.disciplina_id),
@@ -116,7 +116,7 @@ export default function ProfessorDisciplinasPage() {
 
   async function handleDelete(id: number) {
     try {
-      await apiClient.delete(`/professor-disciplinas/${id}`)
+      await apiClient.delete(`/professor-disciplinas/${id}/`)
       toast({
         title: 'Sucesso',
         description: 'Vínculo excluído com sucesso',

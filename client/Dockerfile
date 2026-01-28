@@ -8,6 +8,9 @@ RUN npm install
 
 # Copy source and build
 COPY . .
+# Build-time envs (ensure public API URL gets baked into client bundle)
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 

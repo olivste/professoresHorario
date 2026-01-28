@@ -49,7 +49,7 @@ export default function UsuariosPage() {
 
   async function loadUsuarios() {
     try {
-      const data = await apiClient.get<Usuario[]>('/usuarios?limit=1000')
+      const data = await apiClient.get<Usuario[]>('/usuarios/?limit=1000')
       setUsuarios(data)
     } catch (error) {
       toast({
@@ -67,7 +67,7 @@ export default function UsuariosPage() {
     setIsSaving(true)
 
     try {
-      await apiClient.post('/usuarios', formData)
+      await apiClient.post('/usuarios/', formData)
       toast({
         title: 'Sucesso',
         description: 'Usuário criado com sucesso',

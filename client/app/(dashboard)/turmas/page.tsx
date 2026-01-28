@@ -66,8 +66,8 @@ export default function TurmasPage() {
   async function loadData() {
     try {
       const [turmasData, turnosData] = await Promise.all([
-        apiClient.get<Turma[]>('/turmas?limit=1000'),
-        apiClient.get<Turno[]>('/turnos?limit=1000'),
+        apiClient.get<Turma[]>('/turmas/?limit=1000'),
+        apiClient.get<Turno[]>('/turnos/?limit=1000'),
       ])
       setTurmas(turmasData)
       setTurnos(turnosData)
@@ -87,7 +87,7 @@ export default function TurmasPage() {
     setIsSaving(true)
 
     try {
-      await apiClient.post('/turmas', {
+      await apiClient.post('/turmas/', {
         ...formData,
         turno_id: Number(formData.turno_id),
       })
@@ -111,7 +111,7 @@ export default function TurmasPage() {
 
   async function handleDelete(id: number) {
     try {
-      await apiClient.delete(`/turmas/${id}`)
+      await apiClient.delete(`/turmas/${id}/`)
       toast({
         title: 'Sucesso',
         description: 'Turma excluída com sucesso',

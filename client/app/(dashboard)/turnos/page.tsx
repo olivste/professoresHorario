@@ -58,7 +58,7 @@ export default function TurnosPage() {
 
   async function loadTurnos() {
     try {
-      const data = await apiClient.get<Turno[]>('/turnos?limit=1000')
+      const data = await apiClient.get<Turno[]>('/turnos/?limit=1000')
       setTurnos(data)
     } catch (error) {
       toast({
@@ -76,7 +76,7 @@ export default function TurnosPage() {
     setIsSaving(true)
 
     try {
-      await apiClient.post('/turnos', formData)
+      await apiClient.post('/turnos/', formData)
       toast({
         title: 'Sucesso',
         description: 'Turno criado com sucesso',
@@ -97,7 +97,7 @@ export default function TurnosPage() {
 
   async function handleDelete(id: number) {
     try {
-      await apiClient.delete(`/turnos/${id}`)
+      await apiClient.delete(`/turnos/${id}/`)
       toast({
         title: 'Sucesso',
         description: 'Turno excluído com sucesso',

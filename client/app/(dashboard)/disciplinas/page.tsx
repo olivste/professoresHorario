@@ -143,7 +143,7 @@ export default function DisciplinasPage() {
 
   async function loadDisciplinas() {
     try {
-      const data = await apiClient.get<Disciplina[]>('/disciplinas?limit=1000')
+      const data = await apiClient.get<Disciplina[]>('/disciplinas/?limit=1000')
       setDisciplinas(data)
     } catch (error) {
       toast({
@@ -161,7 +161,7 @@ export default function DisciplinasPage() {
     setIsSaving(true)
 
     try {
-      await apiClient.post('/disciplinas', formData)
+      await apiClient.post('/disciplinas/', formData)
       toast({
         title: 'Sucesso',
         description: 'Disciplina criada com sucesso',
@@ -182,7 +182,7 @@ export default function DisciplinasPage() {
 
   async function handleDelete(id: number) {
     try {
-      await apiClient.delete(`/disciplinas/${id}`)
+      await apiClient.delete(`/disciplinas/${id}/`)
       toast({
         title: 'Sucesso',
         description: 'Disciplina excluída com sucesso',

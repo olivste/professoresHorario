@@ -60,7 +60,7 @@ export default function EspacosPage() {
 
   async function loadEspacos() {
     try {
-      const data = await apiClient.get<Espaco[]>('/espacos?limit=1000')
+      const data = await apiClient.get<Espaco[]>('/espacos/?limit=1000')
       setEspacos(data)
     } catch (error) {
       toast({
@@ -78,7 +78,7 @@ export default function EspacosPage() {
     setIsSaving(true)
 
     try {
-      await apiClient.post('/espacos', formData)
+      await apiClient.post('/espacos/', formData)
       toast({
         title: 'Sucesso',
         description: 'Espaço criado com sucesso',
@@ -99,7 +99,7 @@ export default function EspacosPage() {
 
   async function handleDelete(id: number) {
     try {
-      await apiClient.delete(`/espacos/${id}`)
+      await apiClient.delete(`/espacos/${id}/`)
       toast({
         title: 'Sucesso',
         description: 'Espaço excluído com sucesso',

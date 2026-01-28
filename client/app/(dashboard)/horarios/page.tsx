@@ -105,11 +105,11 @@ export default function HorariosPage() {
   async function loadData() {
     try {
       const [horariosData, professoresData, disciplinasData, turmasData, turnosData] = await Promise.all([
-        apiClient.get<Horario[]>('/horarios?limit=1000'),
-        apiClient.get<Professor[]>('/professores?limit=1000'),
-        apiClient.get<Disciplina[]>('/disciplinas?limit=1000'),
-        apiClient.get<Turma[]>('/turmas?limit=1000'),
-        apiClient.get<Turno[]>('/turnos?limit=1000'),
+        apiClient.get<Horario[]>('/horarios/?limit=1000'),
+        apiClient.get<Professor[]>('/professores/?limit=1000'),
+        apiClient.get<Disciplina[]>('/disciplinas/?limit=1000'),
+        apiClient.get<Turma[]>('/turmas/?limit=1000'),
+        apiClient.get<Turno[]>('/turnos/?limit=1000'),
       ])
       setHorarios(horariosData)
       setProfessores(professoresData)
@@ -132,7 +132,7 @@ export default function HorariosPage() {
     setIsSaving(true)
 
     try {
-      await apiClient.post('/horarios', {
+      await apiClient.post('/horarios/', {
         ...formData,
         professor_id: Number(formData.professor_id),
         disciplina_id: Number(formData.disciplina_id),
@@ -159,7 +159,7 @@ export default function HorariosPage() {
 
   async function handleDelete(id: number) {
     try {
-      await apiClient.delete(`/horarios/${id}`)
+      await apiClient.delete(`/horarios/${id}/`)
       toast({
         title: 'Sucesso',
         description: 'Horário excluído com sucesso',

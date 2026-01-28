@@ -74,7 +74,7 @@ export default function ProfessoresPage() {
 
   async function loadProfessores() {
     try {
-      const data = await apiClient.get<Professor[]>('/professores?limit=1000')
+      const data = await apiClient.get<Professor[]>('/professores/?limit=1000')
       setProfessores(data)
     } catch (error) {
       toast({
@@ -92,7 +92,7 @@ export default function ProfessoresPage() {
     setIsSaving(true)
 
     try {
-      await apiClient.post('/professores', formData)
+      await apiClient.post('/professores/', formData)
       toast({
         title: 'Sucesso',
         description: 'Professor criado com sucesso',
@@ -113,7 +113,7 @@ export default function ProfessoresPage() {
 
   async function handleDelete(id: number) {
     try {
-      await apiClient.delete(`/professores/${id}`)
+      await apiClient.delete(`/professores/${id}/`)
       toast({
         title: 'Sucesso',
         description: 'Professor excluído com sucesso',

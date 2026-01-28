@@ -51,7 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(false)
     } else if (storedToken) {
       // Rehydrate user from API if we have a token but no valid user
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+      const baseUrl = '/api'
       fetch(`${baseUrl}/auth/me`, {
         headers: { Authorization: `Bearer ${storedToken}` },
       })
@@ -74,7 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (username: string, senha: string) => {
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+      const baseUrl = '/api'
       const response = await fetch(`${baseUrl}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -95,7 +95,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Fetch current user using the token
       const meRes = await fetch(`${baseUrl}/auth/me`, {
         headers: {
-          'Content-Type': 'application/json',
           Authorization: `Bearer ${tokenValue}`,
         },
       })

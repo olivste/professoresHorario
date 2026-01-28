@@ -59,6 +59,9 @@ app = FastAPI(
     version="2.0.0"
 )
 
+# Avoid automatic redirects between slash/no-slash variants which can break proxies
+# Keep default redirect between slash/no-slash so proxies can follow redirects
+
 @app.on_event("startup")
 def startup() -> None:
     validate_settings()

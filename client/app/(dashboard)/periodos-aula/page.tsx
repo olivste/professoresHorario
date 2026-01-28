@@ -81,8 +81,8 @@ export default function PeriodosAulaPage() {
   async function loadData() {
     try {
       const [periodosData, turnosData] = await Promise.all([
-        apiClient.get<PeriodoAula[]>('/periodos-aula?limit=1000'),
-        apiClient.get<Turno[]>('/turnos?limit=1000'),
+        apiClient.get<PeriodoAula[]>('/periodos-aula/?limit=1000'),
+        apiClient.get<Turno[]>('/turnos/?limit=1000'),
       ])
       setPeriodos(periodosData)
       setTurnos(turnosData)
@@ -102,7 +102,7 @@ export default function PeriodosAulaPage() {
     setIsSaving(true)
 
     try {
-      await apiClient.post('/periodos-aula', {
+      await apiClient.post('/periodos-aula/', {
         ...formData,
         turno_id: Number(formData.turno_id),
       })
@@ -138,7 +138,7 @@ export default function PeriodosAulaPage() {
         descricao_intervalo: autoGenData.descricao_intervalo,
       })
       
-      await apiClient.post(`/periodos-aula/auto-gerar?${params}`, {})
+      await apiClient.post(`/periodos-aula/auto-gerar/?${params}`, {})
       toast({
         title: 'Sucesso',
         description: 'Períodos gerados automaticamente',
@@ -159,7 +159,7 @@ export default function PeriodosAulaPage() {
 
   async function handleDelete(id: number) {
     try {
-      await apiClient.delete(`/periodos-aula/${id}`)
+      await apiClient.delete(`/periodos-aula/${id}/`)
       toast({
         title: 'Sucesso',
         description: 'Período excluído com sucesso',

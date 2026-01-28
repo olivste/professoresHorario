@@ -30,12 +30,12 @@ export default function DashboardPage() {
     async function loadStats() {
       try {
         const [professores, disciplinas, turnos, espacos, usuarios, horarios] = await Promise.all([
-          apiClient.get<any[]>('/professores?limit=1000').catch(() => []),
-          apiClient.get<any[]>('/disciplinas?limit=1000').catch(() => []),
-          apiClient.get<any[]>('/turnos?limit=1000').catch(() => []),
-          apiClient.get<any[]>('/espacos?limit=1000').catch(() => []),
-          apiClient.get<any[]>('/usuarios?limit=1000').catch(() => []),
-          apiClient.get<any[]>('/horarios?limit=1000').catch(() => []),
+          apiClient.get<any[]>('/professores/?limit=1000').catch(() => []),
+          apiClient.get<any[]>('/disciplinas/?limit=1000').catch(() => []),
+          apiClient.get<any[]>('/turnos/?limit=1000').catch(() => []),
+          apiClient.get<any[]>('/espacos/?limit=1000').catch(() => []),
+          apiClient.get<any[]>('/usuarios/?limit=1000').catch(() => []),
+          apiClient.get<any[]>('/horarios/?limit=1000').catch(() => []),
         ])
 
         setStats({

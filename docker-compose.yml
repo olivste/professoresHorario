@@ -29,7 +29,7 @@ services:
       DEFAULT_ADMIN_USERNAME: "admin"
       DEFAULT_ADMIN_PASSWORD: "admin123"
       DEFAULT_ADMIN_EMAIL: "admin@example.com"
-      ALLOWED_ORIGINS: "http://localhost:3000,http://127.0.0.1:3000,https://edu.gsuave.site,http://edu.gsuave.site"
+      ALLOWED_ORIGINS: "http://localhost:3000,http://localhost:3033,http://127.0.0.1:3000,https://edu.gsuave.site,http://edu.gsuave.site"
     ports:
       - "8000:8000"
     depends_on:
@@ -42,15 +42,28 @@ services:
     build:
       context: ./client
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://apiedu.gsuave.site
     container_name: professores_web
     environment:
       #*NEXT_PUBLIC_API_URL: http://localhost:8000
-      NEXT_PUBLIC_API_URL: https://api.edu.gsuave.site
+      NEXT_PUBLIC_API_URL: http://apiedu.gsuave.site
       API_URL_INTERNAL: http://api:8000
+      API_REWRITE_TARGET: http://api:8000
     ports:
       - "3033:3000"
     depends_on:
       - api
+
+  proxy:
+    image: nginx:alpine
+    container_name: professores_proxy
+    depends_on:
+      - api
+    volumes:
+      - ./proxy/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "80:80"
 
 volumes:
   postgres_data:
