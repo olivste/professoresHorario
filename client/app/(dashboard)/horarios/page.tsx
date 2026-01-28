@@ -48,6 +48,16 @@ interface Turno {
   nome: string
 }
 
+interface PeriodoAula {
+  id: number
+  turno_id: number
+  numero_aula: number
+  hora_inicio: string
+  hora_fim: string
+  tipo: 'AULA' | 'INTERVALO' | 'ALMOCO'
+  descricao?: string
+}
+
 interface Horario {
   id: number
   professor_id: number
@@ -80,10 +90,14 @@ export default function HorariosPage() {
   const [disciplinas, setDisciplinas] = useState<Disciplina[]>([])
   const [turmas, setTurmas] = useState<Turma[]>([])
   const [turnos, setTurnos] = useState<Turno[]>([])
+  const [periodos, setPeriodos] = useState<PeriodoAula[]>([])
+  const [profDiscLinks, setProfDiscLinks] = useState<Array<{ professor_id: number; disciplina_id: number }>>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [deleteId, setDeleteId] = useState<number | null>(null)
+  const [selectedPeriodoId, setSelectedPeriodoId] = useState<string>('')
+  const [usarPeriodo, setUsarPeriodo] = useState<boolean>(false)
   const { toast } = useToast()
 
   const [formData, setFormData] = useState({
@@ -104,18 +118,24 @@ export default function HorariosPage() {
 
   async function loadData() {
     try {
-      const [horariosData, professoresData, disciplinasData, turmasData, turnosData] = await Promise.all([
+      const [horariosData, professoresData, disciplinasData, turmasData, turnosData, periodosData, linksData] = await Promise.all([
         apiClient.get<Horario[]>('/horarios/?limit=1000'),
         apiClient.get<Professor[]>('/professores/?limit=1000'),
         apiClient.get<Disciplina[]>('/disciplinas/?limit=1000'),
         apiClient.get<Turma[]>('/turmas/?limit=1000'),
         apiClient.get<Turno[]>('/turnos/?limit=1000'),
+        apiClient.get<PeriodoAula[]>('/periodos-aula/?limit=1000'),
+        apiClient.get<any[]>('/professor-disciplinas/'),
       ])
       setHorarios(horariosData)
       setProfessores(professoresData)
       setDisciplinas(disciplinasData)
       setTurmas(turmasData)
       setTurnos(turnosData)
+      setPeriodos(periodosData)
+      setProfDiscLinks(
+        linksData.map((l: any) => ({ professor_id: l.professor_id, disciplina_id: l.disciplina_id }))
+      )
     } catch (error) {
       toast({
         title: 'Erro',
@@ -126,6 +146,53 @@ export default function HorariosPage() {
       setIsLoading(false)
     }
   }
+
+  // Atualiza hora início/fim ao selecionar um período
+  useEffect(() => {
+    if (!usarPeriodo) return
+    const id = Number(selectedPeriodoId)
+    const periodo = periodos.find((p) => p.id === id)
+    if (periodo) {
+      setFormData((prev) => ({
+        ...prev,
+        hora_inicio: periodo.hora_inicio,
+        hora_fim: periodo.hora_fim,
+      }))
+    }
+  }, [selectedPeriodoId, usarPeriodo, periodos])
+
+  // Ao trocar o turno, limpa seleção de período
+  useEffect(() => {
+    setSelectedPeriodoId('')
+  }, [formData.turno_id])
+
+  const periodosFiltrados = periodos.filter(
+    (p) => p.turno_id === Number(formData.turno_id) && p.tipo === 'AULA'
+  )
+
+  const professoresFiltrados = (() => {
+    const discId = Number(formData.disciplina_id)
+    if (!discId || profDiscLinks.length === 0) return professores
+    const allowedProfIds = new Set(
+      profDiscLinks.filter((l) => l.disciplina_id === discId).map((l) => l.professor_id)
+    )
+    const result = professorsSafeFilter(professores, allowedProfIds)
+    return result.length > 0 ? result : professores
+  })()
+
+  function professorsSafeFilter(list: Professor[], allowed: Set<number>) {
+    return list.filter((p) => allowed.has(p.id))
+  }
+
+  const disciplinasFiltradas = (() => {
+    const profId = Number(formData.professor_id)
+    if (!profId || profDiscLinks.length === 0) return disciplinas
+    const allowedDiscIds = new Set(
+      profDiscLinks.filter((l) => l.professor_id === profId).map((l) => l.disciplina_id)
+    )
+    const result = disciplinas.filter((d) => allowedDiscIds.has(d.id))
+    return result.length > 0 ? result : disciplinas
+  })()
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -282,7 +349,7 @@ export default function HorariosPage() {
                       <SelectValue placeholder="Selecione um professor" />
                     </SelectTrigger>
                     <SelectContent>
-                      {professores.map((prof) => (
+                      {professoresFiltrados.map((prof) => (
                         <SelectItem key={prof.id} value={prof.id.toString()}>
                           {prof.usuario?.nome}
                         </SelectItem>
@@ -302,7 +369,7 @@ export default function HorariosPage() {
                       <SelectValue placeholder="Selecione uma disciplina" />
                     </SelectTrigger>
                     <SelectContent>
-                      {disciplinas.map((disc) => (
+                      {disciplinasFiltradas.map((disc) => (
                         <SelectItem key={disc.id} value={disc.id.toString()}>
                           {disc.codigo} - {disc.nome}
                         </SelectItem>
@@ -383,11 +450,48 @@ export default function HorariosPage() {
                 </div>
 
                 <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="periodo-select">Usar horário de Período</Label>
+                    <Switch
+                      id="usar_periodo"
+                      checked={usarPeriodo}
+                      onCheckedChange={(checked) => setUsarPeriodo(checked)}
+                    />
+                  </div>
+                  {usarPeriodo && (
+                    <Select
+                      value={selectedPeriodoId}
+                      onValueChange={(value) => setSelectedPeriodoId(value)}
+                      disabled={!formData.turno_id || periodosFiltrados.length === 0}
+                    >
+                      <SelectTrigger id="periodo-select">
+                        <SelectValue placeholder={
+                          !formData.turno_id
+                            ? 'Selecione o turno primeiro'
+                            : periodosFiltrados.length === 0
+                            ? 'Nenhum período de aula disponível'
+                            : 'Selecione um período'
+                        } />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {periodosFiltrados.map((p) => (
+                          <SelectItem key={p.id} value={p.id.toString()}>
+                            {p.numero_aula}ª aula • {p.hora_inicio} — {p.hora_fim}
+                            {p.descricao ? ` • ${p.descricao}` : ''}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+
+                <div className="space-y-2">
                   <Label htmlFor="hora_inicio">Hora Início*</Label>
                   <Input
                     id="hora_inicio"
                     type="time"
                     required
+                    disabled={usarPeriodo}
                     value={formData.hora_inicio}
                     onChange={(e) => setFormData({ ...formData, hora_inicio: e.target.value })}
                   />
@@ -399,6 +503,7 @@ export default function HorariosPage() {
                     id="hora_fim"
                     type="time"
                     required
+                    disabled={usarPeriodo}
                     value={formData.hora_fim}
                     onChange={(e) => setFormData({ ...formData, hora_fim: e.target.value })}
                   />
