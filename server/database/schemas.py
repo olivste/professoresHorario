@@ -227,6 +227,8 @@ class Turma(TurmaBase):
     updated_at: Optional[datetime] = None
     turno: Turno
     periodos_aula: List["PeriodoAula"] = []
+    # Disciplinas vinculadas à turma
+    turma_disciplinas: List["TurmaDisciplina"] = []
 
     class Config:
         from_attributes = True
@@ -245,6 +247,48 @@ class ProfessorDisciplina(ProfessorDisciplinaBase):
     created_at: datetime
     professor: Professor
     disciplina: Disciplina
+# TurmaDisciplina schemas
+class TurmaDisciplinaBase(BaseModel):
+    turma_id: int
+    disciplina_id: int
+
+class TurmaDisciplinaCreate(TurmaDisciplinaBase):
+    pass
+
+class TurmaDisciplina(TurmaDisciplinaBase):
+    id: int
+    created_at: datetime
+    turma: TurmaSimples
+    disciplina: Disciplina
+
+    class Config:
+        from_attributes = True
+
+# ProfessorBloqueio schemas
+class ProfessorBloqueioBase(BaseModel):
+    professor_id: int
+    dia_semana: DiaSemanaEnum
+    hora_inicio: time
+    hora_fim: time
+    categoria: Optional[str] = None
+    motivo: Optional[str] = None
+
+class ProfessorBloqueioCreate(ProfessorBloqueioBase):
+    pass
+
+class ProfessorBloqueioUpdate(BaseModel):
+    dia_semana: Optional[DiaSemanaEnum] = None
+    hora_inicio: Optional[time] = None
+    hora_fim: Optional[time] = None
+    categoria: Optional[str] = None
+    motivo: Optional[str] = None
+
+class ProfessorBloqueio(ProfessorBloqueioBase):
+    id: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
 
     class Config:
         from_attributes = True
@@ -355,6 +399,7 @@ Horario.model_rebuild()
 PeriodoAula.model_rebuild()
 Turno.model_rebuild()
 Turma.model_rebuild()
+TurmaDisciplina.model_rebuild()
 
 # ================================
 # SCHEMAS DE AUTENTICAÇÃO

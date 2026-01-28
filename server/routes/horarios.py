@@ -30,6 +30,31 @@ def create_horario(horario: schemas.HorarioCreate, db: Session = Depends(get_db)
     if not turma:
         raise HTTPException(status_code=404, detail="Turma não encontrada")
 
+    # Validar vínculos: professor-disciplina e turma-disciplina
+    prof_disc = db.query(models.ProfessorDisciplina).filter(
+        models.ProfessorDisciplina.professor_id == horario.professor_id,
+        models.ProfessorDisciplina.disciplina_id == horario.disciplina_id,
+    ).first()
+    if not prof_disc:
+        raise HTTPException(status_code=400, detail="Professor não vinculado à disciplina")
+
+    turma_disc = db.query(models.TurmaDisciplina).filter(
+        models.TurmaDisciplina.turma_id == horario.turma_id,
+        models.TurmaDisciplina.disciplina_id == horario.disciplina_id,
+    ).first()
+    if not turma_disc:
+        raise HTTPException(status_code=400, detail="Disciplina não vinculada à turma")
+
+    # Bloqueio de disponibilidade do professor
+    if crud.verificar_bloqueio_professor(
+        db,
+        professor_id=horario.professor_id,
+        dia_semana=horario.dia_semana,
+        hora_inicio=horario.hora_inicio,
+        hora_fim=horario.hora_fim,
+    ):
+        raise HTTPException(status_code=400, detail="Professor indisponível nesse horário")
+
     if crud.verificar_conflito_horario(
         db,
         professor_id=horario.professor_id,
@@ -60,6 +85,31 @@ def update_horario(horario_id: int, horario: schemas.HorarioUpdate, db: Session 
     dia_semana = horario.dia_semana if horario.dia_semana is not None else atual.dia_semana
     hora_inicio = horario.hora_inicio if horario.hora_inicio is not None else atual.hora_inicio
     hora_fim = horario.hora_fim if horario.hora_fim is not None else atual.hora_fim
+
+    # Validar vínculos: professor-disciplina e turma-disciplina
+    prof_disc = db.query(models.ProfessorDisciplina).filter(
+        models.ProfessorDisciplina.professor_id == professor_id,
+        models.ProfessorDisciplina.disciplina_id == (horario.disciplina_id if horario.disciplina_id is not None else atual.disciplina_id),
+    ).first()
+    if not prof_disc:
+        raise HTTPException(status_code=400, detail="Professor não vinculado à disciplina")
+
+    turma_disc = db.query(models.TurmaDisciplina).filter(
+        models.TurmaDisciplina.turma_id == turma_id,
+        models.TurmaDisciplina.disciplina_id == (horario.disciplina_id if horario.disciplina_id is not None else atual.disciplina_id),
+    ).first()
+    if not turma_disc:
+        raise HTTPException(status_code=400, detail="Disciplina não vinculada à turma")
+
+    # Bloqueio de disponibilidade do professor
+    if crud.verificar_bloqueio_professor(
+        db,
+        professor_id=professor_id,
+        dia_semana=dia_semana,
+        hora_inicio=hora_inicio,
+        hora_fim=hora_fim,
+    ):
+        raise HTTPException(status_code=400, detail="Professor indisponível nesse horário")
 
     if crud.verificar_conflito_horario(
         db,

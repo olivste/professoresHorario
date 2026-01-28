@@ -130,6 +130,7 @@ class Turma(Base):
     turno = relationship("Turno", back_populates="turmas")
     horarios = relationship("Horario", back_populates="turma")
     periodos_aula = relationship("PeriodoAula", back_populates="turma")
+    turma_disciplinas = relationship("TurmaDisciplina", back_populates="turma", cascade="all, delete-orphan")
 
 class Disciplina(Base):
     __tablename__ = "disciplinas"
@@ -147,6 +148,21 @@ class Disciplina(Base):
     professor_disciplinas = relationship("ProfessorDisciplina", back_populates="disciplina")
     horarios = relationship("Horario", back_populates="disciplina")
 
+class TurmaDisciplina(Base):
+    __tablename__ = "turma_disciplinas"
+
+    id = Column(Integer, primary_key=True, index=True)
+    turma_id = Column(Integer, ForeignKey("turmas.id"), nullable=False)
+    disciplina_id = Column(Integer, ForeignKey("disciplinas.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    turma = relationship("Turma", back_populates="turma_disciplinas")
+    disciplina = relationship("Disciplina")
+
+    __table_args__ = (
+        UniqueConstraint('turma_id', 'disciplina_id', name='uq_turma_disciplina'),
+    )
+
 class ProfessorDisciplina(Base):
     __tablename__ = "professor_disciplinas"
 
@@ -159,6 +175,29 @@ class ProfessorDisciplina(Base):
     # Relacionamentos
     professor = relationship("Professor", back_populates="professor_disciplinas")
     disciplina = relationship("Disciplina", back_populates="professor_disciplinas")
+
+class ProfessorBloqueio(Base):
+    __tablename__ = "professor_bloqueios"
+
+    id = Column(Integer, primary_key=True, index=True)
+    professor_id = Column(Integer, ForeignKey("professores.id"), nullable=False)
+    dia_semana = Column(
+        Enum(
+            DiaSemanaEnum,
+            values_callable=lambda enum_cls: [e.value for e in enum_cls],
+            validate_strings=True,
+            native_enum=False,
+            name="diasemanaenum",
+        ),
+        nullable=False,
+    )
+    hora_inicio = Column(Time, nullable=False)
+    hora_fim = Column(Time, nullable=False)
+    categoria = Column(String(100))
+    motivo = Column(Text)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    professor = relationship("Professor")
 
 class Horario(Base):
     __tablename__ = "horarios"

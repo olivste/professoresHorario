@@ -195,6 +195,60 @@ def get_professores_disciplina(db: Session, disciplina_id: int):
         models.ProfessorDisciplina.disciplina_id == disciplina_id
     ).all()
 
+# TurmaDisciplina CRUD operations
+def create_turma_disciplina(db: Session, link: schemas.TurmaDisciplinaCreate):
+    db_link = models.TurmaDisciplina(**link.model_dump())
+    db.add(db_link)
+    db.commit()
+    db.refresh(db_link)
+    return db_link
+
+def get_turma_disciplinas(db: Session, skip: int = 0, limit: int = 100):
+    return db.query(models.TurmaDisciplina).offset(skip).limit(limit).all()
+
+def get_turma_disciplinas_por_turma(db: Session, turma_id: int):
+    return db.query(models.TurmaDisciplina).filter(models.TurmaDisciplina.turma_id == turma_id).all()
+
+def delete_turma_disciplina(db: Session, link_id: int):
+    link = db.query(models.TurmaDisciplina).filter(models.TurmaDisciplina.id == link_id).first()
+    if link:
+        db.delete(link)
+        db.commit()
+        return True
+    return False
+
+# ProfessorBloqueio CRUD operations
+def create_professor_bloqueio(db: Session, bloqueio: schemas.ProfessorBloqueioCreate):
+    db_bloqueio = models.ProfessorBloqueio(**bloqueio.model_dump())
+    db.add(db_bloqueio)
+    db.commit()
+    db.refresh(db_bloqueio)
+    return db_bloqueio
+
+def get_professor_bloqueios(db: Session, skip: int = 0, limit: int = 100):
+    return db.query(models.ProfessorBloqueio).offset(skip).limit(limit).all()
+
+def get_professor_bloqueios_por_professor(db: Session, professor_id: int):
+    return db.query(models.ProfessorBloqueio).filter(models.ProfessorBloqueio.professor_id == professor_id).all()
+
+def update_professor_bloqueio(db: Session, bloqueio_id: int, bloqueio: schemas.ProfessorBloqueioUpdate):
+    db_b = db.query(models.ProfessorBloqueio).filter(models.ProfessorBloqueio.id == bloqueio_id).first()
+    if db_b:
+        update_data = bloqueio.model_dump(exclude_unset=True)
+        for field, value in update_data.items():
+            setattr(db_b, field, value)
+        db.commit()
+        db.refresh(db_b)
+    return db_b
+
+def delete_professor_bloqueio(db: Session, bloqueio_id: int):
+    db_b = db.query(models.ProfessorBloqueio).filter(models.ProfessorBloqueio.id == bloqueio_id).first()
+    if db_b:
+        db.delete(db_b)
+        db.commit()
+        return True
+    return False
+
 # Horário CRUD operations
 def get_horario(db: Session, horario_id: int):
     return db.query(models.Horario).filter(models.Horario.id == horario_id).first()
@@ -236,6 +290,23 @@ def verificar_conflito_horario(
         query = query.filter(models.Horario.id != horario_id)
 
     return query.first() is not None
+
+def verificar_bloqueio_professor(
+    db: Session,
+    professor_id: int,
+    dia_semana,
+    hora_inicio: time,
+    hora_fim: time,
+):
+    return db.query(models.ProfessorBloqueio).filter(
+        models.ProfessorBloqueio.professor_id == professor_id,
+        models.ProfessorBloqueio.dia_semana == dia_semana,
+        or_(
+            and_(models.ProfessorBloqueio.hora_inicio <= hora_inicio, models.ProfessorBloqueio.hora_fim > hora_inicio),
+            and_(models.ProfessorBloqueio.hora_inicio < hora_fim, models.ProfessorBloqueio.hora_fim >= hora_fim),
+            and_(models.ProfessorBloqueio.hora_inicio >= hora_inicio, models.ProfessorBloqueio.hora_fim <= hora_fim),
+        ),
+    ).first() is not None
 
 def create_horario(db: Session, horario: schemas.HorarioCreate):
     db_horario = models.Horario(**horario.model_dump())
