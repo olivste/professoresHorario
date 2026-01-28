@@ -173,6 +173,11 @@ export default function HorariosPage() {
     setFormData((prev) => ({ ...prev, turma_id: '' }))
   }, [formData.turno_id])
 
+  // Ao trocar a turma, limpar disciplina
+  useEffect(() => {
+    setFormData((prev) => ({ ...prev, disciplina_id: '' }))
+  }, [formData.turma_id])
+
   const periodosFiltrados = periodos.filter(
     (p) => p.turno_id === Number(formData.turno_id) && p.tipo === 'AULA'
   )
@@ -410,8 +415,8 @@ export default function HorariosPage() {
                   <Select
                     value={formData.professor_id}
                     onValueChange={(value) => {
-                      // Ao trocar professor, limpar disciplina selecionada
-                      setFormData({ ...formData, professor_id: value, disciplina_id: '' })
+                      // Ao trocar professor, limpar disciplina e turma selecionadas
+                      setFormData({ ...formData, professor_id: value, disciplina_id: '', turma_id: '' })
                     }}
                     required
                   >
@@ -435,11 +440,15 @@ export default function HorariosPage() {
                     value={formData.disciplina_id}
                     onValueChange={(value) => setFormData({ ...formData, disciplina_id: value })}
                     required
-                    disabled={!formData.professor_id}
+                    disabled={!formData.professor_id || !formData.turma_id}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder={
-                        !formData.professor_id ? 'Selecione o professor primeiro' : 'Selecione uma disciplina'
+                        !formData.professor_id
+                          ? 'Selecione o professor primeiro'
+                          : !formData.turma_id
+                          ? 'Selecione a turma primeiro'
+                          : 'Selecione uma disciplina'
                       } />
                     </SelectTrigger>
                     <SelectContent className="max-h-64 overflow-y-auto">
