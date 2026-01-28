@@ -15,6 +15,7 @@ import { apiClient } from '@/lib/api-client'
 import { DataTable } from '@/components/data-table'
 import { Plus, Loader2, Trash2, Wand2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useToast } from '@/hooks/use-toast'
 import type { ColumnDef } from '@tanstack/react-table'
 import {
@@ -53,6 +54,7 @@ export default function PeriodosAulaPage() {
   const [isAutoGenOpen, setIsAutoGenOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [deleteId, setDeleteId] = useState<number | null>(null)
+  const [tabValue, setTabValue] = useState<string>('todos')
   const { toast } = useToast()
 
   const [formData, setFormData] = useState({
@@ -556,7 +558,7 @@ export default function PeriodosAulaPage() {
         <CardHeader>
           <CardTitle>Lista de Períodos de Aula</CardTitle>
           <CardDescription>
-            {'Visualize e gerencie todos os períodos cadastrados'}
+            {'Visualize e gerencie por turno (Todos, Vespertino, Integral)'}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -565,7 +567,29 @@ export default function PeriodosAulaPage() {
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : (
-            <DataTable columns={columns} data={periodos} />
+            <Tabs value={tabValue} onValueChange={setTabValue} className="mt-2">
+              <TabsList>
+                <TabsTrigger value="todos">Todos</TabsTrigger>
+                {turnos.map((turno) => (
+                  <TabsTrigger key={turno.id} value={`turno-${turno.id}`}>
+                    {turno.nome}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+
+              <TabsContent value="todos" className="mt-4">
+                <DataTable columns={columns} data={periodos} />
+              </TabsContent>
+
+              {turnos.map((turno) => (
+                <TabsContent key={turno.id} value={`turno-${turno.id}`} className="mt-4">
+                  <DataTable
+                    columns={columns}
+                    data={periodos.filter((p) => p.turno_id === turno.id)}
+                  />
+                </TabsContent>
+              ))}
+            </Tabs>
           )}
         </CardContent>
       </Card>
