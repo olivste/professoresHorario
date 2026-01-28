@@ -192,27 +192,27 @@ export default function HorariosPage() {
   const disciplinasFiltradas = (() => {
     const profId = Number(formData.professor_id)
     const turmaId = Number(formData.turma_id)
-    let allowedByProf: Set<number> | null = null
-    let allowedByTurma: Set<number> | null = null
+    const allowedByProf = profId
+      ? new Set(
+          profDiscLinks
+            .filter((l) => l.professor_id === profId)
+            .map((l) => l.disciplina_id)
+        )
+      : null
+    const allowedByTurma = turmaId
+      ? new Set(
+          turmaDiscLinks
+            .filter((l) => l.turma_id === turmaId)
+            .map((l) => l.disciplina_id)
+        )
+      : null
 
-    if (profId && profDiscLinks.length > 0) {
-      allowedByProf = new Set(
-        profDiscLinks.filter((l) => l.professor_id === profId).map((l) => l.disciplina_id)
-      )
-    }
-    if (turmaId && turmaDiscLinks.length > 0) {
-      allowedByTurma = new Set(
-        turmaDiscLinks.filter((l) => l.turma_id === turmaId).map((l) => l.disciplina_id)
-      )
-    }
-
-    // If both filters exist, intersect; otherwise use the one that exists
-    const result = disciplinas.filter((d) => {
-      const byProf = !allowedByProf || allowedByProf.has(d.id)
-      const byTurma = !allowedByTurma || allowedByTurma.has(d.id)
-      return byProf && byTurma
+    return disciplinas.filter((d) => {
+      // If any constraint exists, enforce it; otherwise allow all
+      if (allowedByProf && !allowedByProf.has(d.id)) return false
+      if (allowedByTurma && !allowedByTurma.has(d.id)) return false
+      return true
     })
-    return result.length > 0 ? result : disciplinas
   })()
 
   async function handleSubmit(e: React.FormEvent) {
@@ -475,16 +475,7 @@ export default function HorariosPage() {
                   </Select>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="sala">Sala*</Label>
-                  <Input
-                    id="sala"
-                    required
-                    placeholder="Ex: Sala 101"
-                    value={formData.sala}
-                    onChange={(e) => setFormData({ ...formData, sala: e.target.value })}
-                  />
-                </div>
+                {/* Sala removida conforme solicitação */}
 
                 <div className="space-y-2">
                   <Label htmlFor="periodo-select">Período de Aula*</Label>
