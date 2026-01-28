@@ -406,7 +406,7 @@ export default function HorariosPage() {
                     <SelectContent>
                       {disciplinasFiltradas.map((disc) => (
                         <SelectItem key={disc.id} value={disc.id.toString()}>
-                          {disc.codigo} - {disc.nome}
+                          {disc.codigo ? `${disc.codigo} - ${disc.nome}` : disc.nome}
                         </SelectItem>
                       ))}
                     </SelectContent>
