@@ -44,6 +44,42 @@ interface Professor {
   }
 }
 
+// Helpers para gerar username/email válidos
+const STOPWORDS = ['de', 'da', 'do', 'dos', 'das']
+function slugifyUsername(name: string): string {
+  const toks = name
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .split(/\s+/)
+    .filter((t) => t && !STOPWORDS.includes(t))
+
+  const first = toks[0] || ''
+  const last = toks.length > 1 ? toks[toks.length - 1] : ''
+  let raw = last ? `${first}.${last}` : first
+  // Permitir apenas a-z, 0-9, ponto e underscore
+  raw = raw.replace(/[^a-z0-9._]/g, '')
+  // Colapsar múltiplos pontos
+  raw = raw.replace(/\.{2,}/g, '.')
+  // Remover ponto no início/fim
+  raw = raw.replace(/^\.+|\.+$/g, '')
+  if (raw.length < 3) {
+    raw = raw || 'user'
+  }
+  return raw
+}
+
+function makeEmail(localPart: string): string {
+  let lp = (localPart || 'user')
+    .toLowerCase()
+    .replace(/[^a-z0-9._]/g, '')
+    .replace(/\.{2,}/g, '.')
+    .replace(/^\.+|\.+$/g, '')
+  if (!lp) lp = 'user'
+  return `${lp}@placeholder.com`
+}
+
 export default function ProfessoresPage() {
   const [professores, setProfessores] = useState<Professor[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -83,10 +119,7 @@ export default function ProfessoresPage() {
   useEffect(() => {
     const nome = formData.usuario.nome.trim()
     if (!nome) return
-    const parts = nome.split(/\s+/)
-    const first = parts[0] || ''
-    const last = parts.length > 1 ? parts[parts.length - 1] : ''
-    const baseUser = (first + '.' + last).toLowerCase().normalize('NFD').replace(/[^a-z\.]/g, '')
+    const baseUser = slugifyUsername(nome)
     if (!formData.usuario.username) {
       setFormData({
         ...formData,
@@ -116,16 +149,14 @@ export default function ProfessoresPage() {
 
     try {
       // Auto-generate username and email if not provided
-      let nome = formData.usuario.nome.trim()
-      const parts = nome.split(/\s+/)
-      const first = parts[0] || ''
-      const last = parts.length > 1 ? parts[parts.length - 1] : ''
-      const baseUser = (first + '.' + last).toLowerCase().normalize('NFD').replace(/[^a-z\.]/g, '')
+      const nome = formData.usuario.nome.trim()
+      const baseUser = slugifyUsername(nome)
+      const finalUsername = slugifyUsername(formData.usuario.username || baseUser)
       const usuarioPayload = {
         ...formData.usuario,
-        username: formData.usuario.username || baseUser,
-        // Evita domínios reservados como .local/.example
-        email: formData.usuario.email || `${baseUser || 'user'}@placeholder.com`,
+        username: finalUsername,
+        // Gera email sempre válido
+        email: formData.usuario.email || makeEmail(finalUsername),
         telefone: undefined,
       }
 
