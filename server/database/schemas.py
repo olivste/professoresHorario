@@ -151,6 +151,9 @@ class ProfessorBase(BaseModel):
 class ProfessorCreate(ProfessorBase):
     usuario: UsuarioCreate
 
+class ProfessorAttachCreate(ProfessorBase):
+    usuario_id: int
+
 class ProfessorUpdate(ProfessorBase):
     pass
 

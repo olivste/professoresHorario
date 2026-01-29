@@ -104,6 +104,23 @@ def create_professor(db: Session, professor: schemas.ProfessorCreate):
     db.refresh(db_professor)
     return db_professor
 
+def create_professor_from_usuario(db: Session, usuario_id: int, professor: schemas.ProfessorBase):
+    # Verifica se usuário existe
+    db_usuario = db.query(models.Usuario).filter(models.Usuario.id == usuario_id).first()
+    if not db_usuario:
+        return None
+    # Verifica se já existe professor para esse usuário
+    existente = db.query(models.Professor).filter(models.Professor.usuario_id == usuario_id).first()
+    if existente:
+        return existente
+    # Cria professor vinculado ao usuário existente
+    professor_data = professor.model_dump(exclude_unset=True)
+    db_professor = models.Professor(**professor_data, usuario_id=usuario_id)
+    db.add(db_professor)
+    db.commit()
+    db.refresh(db_professor)
+    return db_professor
+
 def update_professor(db: Session, professor_id: int, professor: schemas.ProfessorUpdate):
     db_professor = db.query(models.Professor).filter(models.Professor.id == professor_id).first()
     if db_professor:

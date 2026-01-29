@@ -23,6 +23,20 @@ def create_professor(professor: schemas.ProfessorCreate, db: Session = Depends(g
         raise HTTPException(status_code=400, detail="Email já cadastrado")
     return crud.create_professor(db=db, professor=professor)
 
+@router.post("/attach-usuario/{usuario_id}", response_model=schemas.Professor)
+def attach_professor(usuario_id: int, professor: schemas.ProfessorBase, db: Session = Depends(get_db)):
+    db_usuario = crud.get_usuario(db, usuario_id)
+    if not db_usuario:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    # Se já existir professor para esse usuário, retorna-o
+    existente = crud.get_professor_by_usuario_id(db, usuario_id)
+    if existente:
+        return existente
+    db_professor = crud.create_professor_from_usuario(db, usuario_id, professor)
+    if not db_professor:
+        raise HTTPException(status_code=400, detail="Falha ao vincular usuário como professor")
+    return db_professor
+
 @router.get("/", response_model=List[schemas.Professor])
 def read_professores(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     professores = crud.get_professores(db, skip=skip, limit=limit)
