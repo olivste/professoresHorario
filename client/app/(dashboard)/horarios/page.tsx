@@ -178,6 +178,24 @@ export default function HorariosPage() {
     setFormData((prev) => ({ ...prev, disciplina_id: '' }))
   }, [formData.turma_id])
 
+  // Ao trocar a disciplina, auto-seleciona professor quando houver único vínculo
+  useEffect(() => {
+    const discId = Number(formData.disciplina_id)
+    if (!discId) return
+    const profsDaDisc = profDiscLinks
+      .filter((l) => l.disciplina_id === discId)
+      .map((l) => l.professor_id)
+    const unique = Array.from(new Set(profsDaDisc))
+    // Se professor atual não está entre os elegíveis, limpar
+    if (formData.professor_id && !unique.includes(Number(formData.professor_id))) {
+      setFormData((prev) => ({ ...prev, professor_id: '' }))
+    }
+    // Auto-seleciona quando existe apenas um possível
+    if (!formData.professor_id && unique.length === 1) {
+      setFormData((prev) => ({ ...prev, professor_id: unique[0].toString() }))
+    }
+  }, [formData.disciplina_id, profDiscLinks])
+
   const periodosFiltrados = periodos.filter(
     (p) => p.turno_id === Number(formData.turno_id) && p.tipo === 'AULA'
   )
@@ -197,30 +215,51 @@ export default function HorariosPage() {
   }
 
   const turmasFiltradas = (() => {
-    const profId = Number(formData.professor_id)
     const turnoId = Number(formData.turno_id)
-    // Exigir professor e turno selecionados
-    if (!profId || !turnoId) return []
-    const discDoProf = new Set(
-      profDiscLinks
-        .filter((l) => l.professor_id === profId)
-        .map((l) => l.disciplina_id)
-    )
-    if (discDoProf.size === 0) return []
+    if (!turnoId) return []
+    const profId = Number(formData.professor_id)
+    const discId = Number(formData.disciplina_id)
+
+    // Mapa turma -> conjunto de disciplinas
     const turmaParaDiscs = new Map<number, Set<number>>()
     for (const l of turmaDiscLinks) {
       const set = turmaParaDiscs.get(l.turma_id) || new Set<number>()
       set.add(l.disciplina_id)
       turmaParaDiscs.set(l.turma_id, set)
     }
+
+    // Conjunto de disciplinas válidas pelo professor (se houver)
+    const discsPorProf = profId
+      ? new Set(
+          profDiscLinks
+            .filter((l) => l.professor_id === profId)
+            .map((l) => l.disciplina_id)
+        )
+      : null
+
+    // Se disciplina já escolhida, priorizar essa restrição
+    const exigeDiscEspecifica = !!discId
+
     return turmas.filter((t) => {
       if (t.turno_id !== turnoId) return false
       const discs = turmaParaDiscs.get(t.id)
-      if (!discs) return false
-      for (const d of discDoProf) {
-        if (discs.has(d)) return true
+      if (!discs || discs.size === 0) return false
+
+      if (exigeDiscEspecifica) {
+        if (!discs.has(discId)) return false
+        // Se também há professor escolhido, garantir que o professor lecione essa disciplina
+        if (discsPorProf && !discsPorProf.has(discId)) return false
+        return true
       }
-      return false
+
+      // Sem disciplina específica: intersecta com disciplinas do professor, se houver
+      if (discsPorProf) {
+        for (const d of discsPorProf) if (discs.has(d)) return true
+        return false
+      }
+
+      // Apenas por turno
+      return true
     })
   })()
 
@@ -435,18 +474,16 @@ export default function HorariosPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="disciplina">Disciplina*</Label>
-                  <p className="text-xs text-muted-foreground">Lista filtrada pelas disciplinas do professor e turma.</p>
+                  <p className="text-xs text-muted-foreground">Você pode escolher a disciplina primeiro; o professor será filtrado/selecionado automaticamente.</p>
                   <Select
                     value={formData.disciplina_id}
                     onValueChange={(value) => setFormData({ ...formData, disciplina_id: value })}
                     required
-                    disabled={!formData.professor_id || !formData.turma_id}
+                    disabled={!formData.turma_id}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder={
-                        !formData.professor_id
-                          ? 'Selecione o professor primeiro'
-                          : !formData.turma_id
+                        !formData.turma_id
                           ? 'Selecione a turma primeiro'
                           : 'Selecione uma disciplina'
                       } />
