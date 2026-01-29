@@ -369,147 +369,93 @@ export default function ProfessoresPage() {
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-4">
-                <h3 className="text-sm font-semibold">Dados do Usuário</h3>
-                <div className="grid grid-cols-2 gap-4">
+              {/* Dados do Usuário */}
+              <div className="rounded-lg border p-4 space-y-4">
+                <div>
+                  <h3 className="text-sm font-semibold">Dados do Usuário</h3>
+                  <p className="text-xs text-muted-foreground">Crie o acesso do professor.</p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="nome">Nome Completo*</Label>
-                    <Input
-                      id="nome"
-                      required
-                      value={formData.usuario.nome}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          usuario: { ...formData.usuario, nome: e.target.value },
-                        })
-                      }
-                    />
+                    <Input id="nome" required value={formData.usuario.nome} onChange={(e)=> setFormData({ ...formData, usuario: { ...formData.usuario, nome: e.target.value } })} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="username">Usuário*</Label>
-                    <Input
-                      id="username"
-                      required
-                      value={formData.usuario.username}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          usuario: { ...formData.usuario, username: e.target.value },
-                        })
-                      }
-                    />
+                    <Input id="username" required value={formData.usuario.username} onChange={(e)=> setFormData({ ...formData, usuario: { ...formData.usuario, username: e.target.value } })} />
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-2 md:col-span-1">
                     <Label htmlFor="senha">Senha*</Label>
-                    <Input
-                      id="senha"
-                      type="password"
-                      required
-                      value={formData.usuario.senha}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          usuario: { ...formData.usuario, senha: e.target.value },
-                        })
-                      }
-                    />
+                    <Input id="senha" type="password" required value={formData.usuario.senha} onChange={(e)=> setFormData({ ...formData, usuario: { ...formData.usuario, senha: e.target.value } })} />
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <h3 className="text-sm font-semibold">Dados do Professor</h3>
-                <div className="grid grid-cols-2 gap-4">
+              {/* Dados do Professor */}
+              <div className="rounded-lg border p-4 space-y-4">
+                <div>
+                  <h3 className="text-sm font-semibold">Dados do Professor</h3>
+                  <p className="text-xs text-muted-foreground">Informações acadêmicas e carga horária.</p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="departamento">Departamento*</Label>
-                    <Input
-                      id="departamento"
-                      required
-                      value={formData.departamento}
-                      onChange={(e) =>
-                        setFormData({ ...formData, departamento: e.target.value })
-                      }
-                    />
+                    <Input id="departamento" required value={formData.departamento} onChange={(e)=> setFormData({ ...formData, departamento: e.target.value })} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="carga_horaria">Carga Horária Semanal*</Label>
-                    <Input
-                      id="carga_horaria"
-                      type="number"
-                      required
-                      value={formData.carga_horaria_semanal}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          carga_horaria_semanal: Number(e.target.value),
-                        })
-                      }
-                    />
+                    <Input id="carga_horaria" type="number" required value={formData.carga_horaria_semanal} onChange={(e)=> setFormData({ ...formData, carga_horaria_semanal: Number(e.target.value) })} />
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="observacoes">Observações</Label>
-                  <Textarea
-                    id="observacoes"
-                    value={formData.observacoes}
-                    onChange={(e) =>
-                      setFormData({ ...formData, observacoes: e.target.value })
-                    }
-                  />
+                  <Textarea id="observacoes" value={formData.observacoes} onChange={(e)=> setFormData({ ...formData, observacoes: e.target.value })} />
                 </div>
-                <div className="space-y-4">
-                  <h4 className="text-sm font-semibold">Disponibilidade Semanal</h4>
-                  <p className="text-muted-foreground text-xs">Adicione períodos em que o professor está disponível.</p>
-                  {['segunda','terca','quarta','quinta','sexta','sabado'].map((dia) => (
-                    <div key={dia} className="grid grid-cols-3 gap-3 items-end">
-                      <div className="col-span-1"><Label>{dia[0].toUpperCase()+dia.slice(1)}</Label></div>
-                      <div className="space-y-2">
-                        <Label>Início</Label>
-                        <Input type="time" onChange={(e)=>{
-                          const idx = formData.disponibilidades.findIndex(d=>d.dia_semana===dia)
-                          const novo = { dia_semana: dia, hora_inicio: e.target.value, hora_fim: formData.disponibilidades[idx]?.hora_fim || '' }
+              </div>
+
+              {/* Disponibilidade Semanal */}
+              <div className="rounded-lg border p-4 space-y-4">
+                <div>
+                  <h3 className="text-sm font-semibold">Disponibilidade Semanal</h3>
+                  <p className="text-xs text-muted-foreground">Marque quando o professor está disponível.</p>
+                </div>
+                <div className="grid grid-cols-12 gap-2 text-xs font-semibold text-muted-foreground">
+                  <div className="col-span-4">Dia</div>
+                  <div className="col-span-4">Início</div>
+                  <div className="col-span-4">Fim</div>
+                </div>
+                {['segunda','terca','quarta','quinta','sexta','sabado'].map((dia) => {
+                  const atual = formData.disponibilidades.find((d)=> d.dia_semana === dia)
+                  const nomeDia = dia[0].toUpperCase() + dia.slice(1)
+                  return (
+                    <div key={dia} className="grid grid-cols-12 gap-2 items-center">
+                      <div className="col-span-4"><Label className="text-sm">{nomeDia}</Label></div>
+                      <div className="col-span-4">
+                        <Input type="time" value={atual?.hora_inicio || ''} onChange={(e)=>{
+                          const novo = { dia_semana: dia, hora_inicio: e.target.value, hora_fim: atual?.hora_fim || '' }
                           setFormData({ ...formData, disponibilidades: [
-                            ...formData.disponibilidades.filter(d=>d.dia_semana!==dia),
+                            ...formData.disponibilidades.filter((d)=> d.dia_semana !== dia),
                             novo,
                           ]})
                         }} />
                       </div>
-                      <div className="space-y-2">
-                        <Label>Fim</Label>
-                        <Input type="time" onChange={(e)=>{
-                          const idx = formData.disponibilidades.findIndex(d=>d.dia_semana===dia)
-                          const novo = { dia_semana: dia, hora_inicio: formData.disponibilidades[idx]?.hora_inicio || '', hora_fim: e.target.value }
+                      <div className="col-span-4">
+                        <Input type="time" value={atual?.hora_fim || ''} onChange={(e)=>{
+                          const novo = { dia_semana: dia, hora_inicio: atual?.hora_inicio || '', hora_fim: e.target.value }
                           setFormData({ ...formData, disponibilidades: [
-                            ...formData.disponibilidades.filter(d=>d.dia_semana!==dia),
+                            ...formData.disponibilidades.filter((d)=> d.dia_semana !== dia),
                             novo,
                           ]})
                         }} />
                       </div>
                     </div>
-                  ))}
-                </div>
+                  )
+                })}
               </div>
 
               <div className="flex justify-end gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsDialogOpen(false)}
-                  disabled={isSaving}
-                >
-                  Cancelar
-                </Button>
-                <Button type="submit" disabled={isSaving}>
-                  {isSaving ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Salvando...
-                    </>
-                  ) : (
-                    'Salvar'
-                  )}
-                </Button>
+                <Button type="button" variant="outline" onClick={()=> setIsDialogOpen(false)} disabled={isSaving}>Cancelar</Button>
+                <Button type="submit" disabled={isSaving}>{isSaving ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Salvando...</>) : 'Salvar'}</Button>
               </div>
             </form>
           </DialogContent>

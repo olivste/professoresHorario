@@ -13,7 +13,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { apiClient } from '@/lib/api-client'
 import { DataTable } from '@/components/data-table'
-import { Plus, Loader2, Trash2, Calendar } from 'lucide-react'
+import { Plus, Loader2, Trash2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/hooks/use-toast'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -103,6 +103,12 @@ export default function HorariosPage() {
   // Sempre usar período para definir hora início/fim
   const [usarPeriodo] = useState<boolean>(true)
   const { toast } = useToast()
+
+  // Filtros da grade
+  const [filterDia, setFilterDia] = useState<string>('')
+  const [filterTurnoId, setFilterTurnoId] = useState<string>('')
+  const [filterTurmaId, setFilterTurmaId] = useState<string>('')
+  const [filterProfessorId, setFilterProfessorId] = useState<string>('')
 
   const [formData, setFormData] = useState({
     professor_id: '',
@@ -372,57 +378,124 @@ export default function HorariosPage() {
     {
       accessorKey: 'dia_semana',
       header: 'Dia',
+      meta: { className: 'w-36' },
       cell: ({ row }) => {
         const dia = diasSemana.find((d) => d.value === row.original.dia_semana)
-        return dia?.label || row.original.dia_semana
+        return (
+          <Badge variant="outline">{dia?.label || row.original.dia_semana}</Badge>
+        )
       },
     },
     {
       accessorKey: 'hora_inicio',
       header: 'Início',
+      meta: { className: 'w-24' },
     },
     {
       accessorKey: 'hora_fim',
       header: 'Fim',
+      meta: { className: 'w-24' },
     },
     {
       accessorKey: 'professor.usuario.nome',
       header: 'Professor',
+      meta: { className: 'truncate' },
       cell: ({ row }) => row.original.professor?.usuario?.nome || '-',
     },
     {
       accessorKey: 'disciplina.nome',
       header: 'Disciplina',
+      meta: { className: 'truncate' },
       cell: ({ row }) => row.original.disciplina?.nome || '-',
     },
     {
       accessorKey: 'turma.nome',
       header: 'Turma',
+      meta: { className: 'w-40 truncate' },
       cell: ({ row }) => row.original.turma?.nome || '-',
     },
     {
       accessorKey: 'turno.nome',
       header: 'Turno',
-      cell: ({ row }) => row.original.turno?.nome || '-',
+      meta: { className: 'w-28' },
+      cell: ({ row }) => (
+        <Badge variant="secondary">{row.original.turno?.nome || '-'}</Badge>
+      ),
     },
     {
       accessorKey: 'sala',
       header: 'Sala',
+      meta: { className: 'w-24' },
     },
     {
       id: 'actions',
       header: 'Ações',
       cell: ({ row }) => (
         <Button
-          variant="ghost"
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           size="icon"
           onClick={() => setDeleteId(row.original.id)}
         >
           <Trash2 className="h-4 w-4 text-destructive" />
         </Button>
       ),
-    },
-  ]
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Seleção de Contexto */}
+              <div className="rounded-lg border p-4 space-y-4">
+                <div>
+                  <h3 className="text-sm font-semibold">Contexto</h3>
+                  <p className="text-xs text-muted-foreground">Escolha turno e dia.</p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="turno">Turno*</Label>
+                    <Select
+                      value={formData.turno_id}
+                      onValueChange={(value) => setFormData({ ...formData, turno_id: value })}
+                      required
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione um turno" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {turnos.map((turno) => (
+                          <SelectItem key={turno.id} value={turno.id.toString()}>
+                            {turno.nome}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="dia_semana">Dia da Semana*</Label>
+                    <Select
+                      value={formData.dia_semana}
+                      onValueChange={(value) => setFormData({ ...formData, dia_semana: value })}
+                      required
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione um dia" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {diasSemana.map((dia) => (
+                          <SelectItem key={dia.value} value={dia.value}>
+                            {dia.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Vínculos */}
+              <div className="rounded-lg border p-4 space-y-4">
+                <div>
+                  <h3 className="text-sm font-semibold">Vínculos</h3>
+                  <p className="text-xs text-muted-foreground">Selecione professor, disciplina e turma.</p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
   return (
     <div className="space-y-6">
@@ -448,7 +521,6 @@ export default function HorariosPage() {
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="professor">Professor*</Label>
                   <Select
@@ -503,52 +575,19 @@ export default function HorariosPage() {
                   <Label htmlFor="turma">Turma*</Label>
                   <Select
                     value={formData.turma_id}
-                    onValueChange={(value) => setFormData({ ...formData, turma_id: value })}
-                    required
-                    disabled={!formData.turno_id}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={
-                        !formData.turno_id
-                          ? 'Selecione o turno primeiro'
-                          : 'Selecione uma turma'
-                      } />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {turmasFiltradas.length === 0 ? (
-                        <SelectItem value="__empty" disabled>
-                          Nenhuma turma disponível para os filtros atuais
-                        </SelectItem>
-                      ) : (
-                        turmasFiltradas.map((turma) => (
-                          <SelectItem key={turma.id} value={turma.id.toString()}>
-                            {turma.nome}
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="turno">Turno*</Label>
-                  <Select
-                    value={formData.turno_id}
-                    onValueChange={(value) => setFormData({ ...formData, turno_id: value })}
-                    required
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione um turno" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {turnos.map((turno) => (
-                        <SelectItem key={turno.id} value={turno.id.toString()}>
+              </div>
                           {turno.nome}
+              {/* Período */}
+              <div className="rounded-lg border p-4 space-y-4">
+                <div>
+                  <h3 className="text-sm font-semibold">Período</h3>
+                  <p className="text-xs text-muted-foreground">Selecionar período define automaticamente início e fim.</p>
+                </div>
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="dia_semana">Dia da Semana*</Label>
@@ -573,6 +612,18 @@ export default function HorariosPage() {
                 {/* Sala removida conforme solicitação */}
 
                 <div className="space-y-2">
+
+                {selectedPeriodoId && (
+                  <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
+                    <div>
+                      <span className="font-medium">Início:</span> {formData.hora_inicio || '--:--'}
+                    </div>
+                    <div>
+                      <span className="font-medium">Fim:</span> {formData.hora_fim || '--:--'}
+                    </div>
+                  </div>
+                )}
+              </div>
                   <Label htmlFor="periodo-select">Período de Aula*</Label>
                   <p className="text-xs text-muted-foreground">Selecionar período define automaticamente início e fim.</p>
                   <Select
@@ -644,13 +695,73 @@ export default function HorariosPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
-          ) : (
-            <DataTable columns={columns} data={horarios} />
-          )}
+          {/* Barra de filtros */}
+          <div className="mb-4 grid grid-cols-1 md:grid-cols-4 gap-3">
+            <Select value={filterDia} onValueChange={setFilterDia}>
+              <SelectTrigger>
+                <SelectValue placeholder="Filtrar por dia" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Todos os dias</SelectItem>
+                {diasSemana.map((d)=> (
+                  <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={filterTurnoId} onValueChange={setFilterTurnoId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Filtrar por turno" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Todos os turnos</SelectItem>
+                {turnos.map((t)=> (
+                  <SelectItem key={t.id} value={t.id.toString()}>{t.nome}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={filterTurmaId} onValueChange={setFilterTurmaId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Filtrar por turma" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Todas as turmas</SelectItem>
+                {turmas.map((turma)=> (
+                  <SelectItem key={turma.id} value={turma.id.toString()}>{turma.nome}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={filterProfessorId} onValueChange={setFilterProfessorId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Filtrar por professor" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Todos os professores</SelectItem>
+                {professores.map((p)=> (
+                  <SelectItem key={p.id} value={p.id.toString()}>{p.usuario?.nome}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {(() => {
+            const filtered = horarios.filter((h)=> {
+              if (filterDia && h.dia_semana !== filterDia) return false
+              if (filterTurnoId && h.turno_id !== Number(filterTurnoId)) return false
+              if (filterTurmaId && h.turma_id !== Number(filterTurmaId)) return false
+              if (filterProfessorId && h.professor_id !== Number(filterProfessorId)) return false
+              return true
+            })
+            return isLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <DataTable columns={columns} data={filtered} />
+            )
+          })()}
         </CardContent>
       </Card>
 
