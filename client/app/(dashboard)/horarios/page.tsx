@@ -474,19 +474,14 @@ export default function HorariosPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="disciplina">Disciplina*</Label>
-                  <p className="text-xs text-muted-foreground">Você pode escolher a disciplina primeiro; o professor será filtrado/selecionado automaticamente.</p>
+                  <p className="text-xs text-muted-foreground">Pode escolher a disciplina primeiro; filtramos e selecionamos o professor quando houver apenas um.</p>
                   <Select
                     value={formData.disciplina_id}
                     onValueChange={(value) => setFormData({ ...formData, disciplina_id: value })}
                     required
-                    disabled={!formData.turma_id}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder={
-                        !formData.turma_id
-                          ? 'Selecione a turma primeiro'
-                          : 'Selecione uma disciplina'
-                      } />
+                      <SelectValue placeholder={'Selecione uma disciplina'} />
                     </SelectTrigger>
                     <SelectContent className="max-h-64 overflow-y-auto">
                       {disciplinasFiltradas.length === 0 ? (
@@ -510,13 +505,11 @@ export default function HorariosPage() {
                     value={formData.turma_id}
                     onValueChange={(value) => setFormData({ ...formData, turma_id: value })}
                     required
-                    disabled={!formData.professor_id || !formData.turno_id}
+                    disabled={!formData.turno_id}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder={
-                        !formData.professor_id
-                          ? 'Selecione o professor primeiro'
-                          : !formData.turno_id
+                        !formData.turno_id
                           ? 'Selecione o turno primeiro'
                           : 'Selecione uma turma'
                       } />
@@ -524,7 +517,7 @@ export default function HorariosPage() {
                     <SelectContent>
                       {turmasFiltradas.length === 0 ? (
                         <SelectItem value="__empty" disabled>
-                          Nenhuma turma do turno com disciplinas do professor
+                          Nenhuma turma disponível para os filtros atuais
                         </SelectItem>
                       ) : (
                         turmasFiltradas.map((turma) => (
