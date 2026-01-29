@@ -3,15 +3,11 @@
 import React from "react"
 
 import { useEffect, useState } from 'react'
-import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { apiClient } from '@/lib/api-client'
 import { DataTable } from '@/components/data-table'
-import { Plus, Loader2 } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/hooks/use-toast'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -22,26 +18,18 @@ interface Usuario {
   username: string
   email: string
   telefone?: string
-  role: 'ADMIN' | 'PROFESSOR' | 'COORDENADOR'
+  role: 'DIRETOR' | 'PEDAGOGO' | 'COORDENADOR' | 'PROFESSOR'
   ativo: boolean
 }
 
 export default function UsuariosPage() {
   const [usuarios, setUsuarios] = useState<Usuario[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const { toast } = useToast()
 
-  const [formData, setFormData] = useState({
-    nome: '',
-    username: '',
-    email: '',
-    telefone: '',
-    role: 'PROFESSOR',
-    senha: '',
-    ativo: true,
-  })
+  // Role options allowed to be managed here (excludes PROFESSOR)
+  const allowedRoles: Array<Usuario['role']> = ['DIRETOR', 'PEDAGOGO', 'COORDENADOR']
 
   useEffect(() => {
     loadUsuarios()
@@ -50,7 +38,8 @@ export default function UsuariosPage() {
   async function loadUsuarios() {
     try {
       const data = await apiClient.get<Usuario[]>('/usuarios/?limit=1000')
-      setUsuarios(data)
+      // Mostrar apenas usuários ativos e não-professores
+      setUsuarios(data.filter((u) => u.ativo && u.role !== 'PROFESSOR'))
     } catch (error) {
       toast({
         title: 'Erro',
@@ -62,40 +51,17 @@ export default function UsuariosPage() {
     }
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
+  async function updateRole(usuarioId: number, role: Usuario['role']) {
     setIsSaving(true)
-
     try {
-      await apiClient.post('/usuarios/', formData)
-      toast({
-        title: 'Sucesso',
-        description: 'Usuário criado com sucesso',
-      })
-      setIsDialogOpen(false)
-      resetForm()
+      await apiClient.put(`/usuarios/${usuarioId}`, { role })
+      toast({ title: 'Função atualizada', description: 'Alteração aplicada com sucesso.' })
       loadUsuarios()
     } catch (error) {
-      toast({
-        title: 'Erro',
-        description: 'Erro ao criar usuário',
-        variant: 'destructive',
-      })
+      toast({ title: 'Erro', description: 'Não foi possível atualizar a função.', variant: 'destructive' })
     } finally {
       setIsSaving(false)
     }
-  }
-
-  function resetForm() {
-    setFormData({
-      nome: '',
-      username: '',
-      email: '',
-      telefone: '',
-      role: 'PROFESSOR',
-      senha: '',
-      ativo: true,
-    })
   }
 
   const columns: ColumnDef<Usuario>[] = [
@@ -119,11 +85,28 @@ export default function UsuariosPage() {
     {
       accessorKey: 'role',
       header: 'Função',
-      cell: ({ row }) => (
-        <Badge variant="outline">
-          {row.original.role}
-        </Badge>
-      ),
+      cell: ({ row }) => {
+        const current = row.original.role
+        const id = row.original.id
+        return (
+          <div className="flex items-center gap-3">
+            <Badge variant="outline">{current}</Badge>
+            <Select
+              value={allowedRoles.includes(current) ? current : undefined}
+              onValueChange={(value) => updateRole(id, value as Usuario['role'])}
+            >
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Alterar função" />
+              </SelectTrigger>
+              <SelectContent>
+                {allowedRoles.map((r) => (
+                  <SelectItem key={r} value={r}>{r}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )
+      },
     },
     {
       accessorKey: 'ativo',
@@ -142,119 +125,16 @@ export default function UsuariosPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Usuários</h1>
           <p className="text-muted-foreground mt-2">
-            {'Gerencie os usuários do sistema'}
+            {'Visualize usuários ativos e ajuste funções de direção/pedagogia'}
           </p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Novo Usuário
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-xl">
-            <DialogHeader>
-              <DialogTitle>Cadastrar Usuário</DialogTitle>
-              <DialogDescription>
-                {'Preencha os dados do novo usuário'}
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="nome">Nome Completo*</Label>
-                  <Input
-                    id="nome"
-                    required
-                    value={formData.nome}
-                    onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="username">Usuário*</Label>
-                  <Input
-                    id="username"
-                    required
-                    value={formData.username}
-                    onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email*</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    required
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="telefone">Telefone</Label>
-                  <Input
-                    id="telefone"
-                    value={formData.telefone}
-                    onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="role">Função*</Label>
-                  <Select
-                    value={formData.role}
-                    onValueChange={(value) => setFormData({ ...formData, role: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ADMIN">Administrador</SelectItem>
-                      <SelectItem value="COORDENADOR">Coordenador</SelectItem>
-                      <SelectItem value="PROFESSOR">Professor</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="senha">Senha*</Label>
-                  <Input
-                    id="senha"
-                    type="password"
-                    required
-                    value={formData.senha}
-                    onChange={(e) => setFormData({ ...formData, senha: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-2 pt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsDialogOpen(false)}
-                  disabled={isSaving}
-                >
-                  Cancelar
-                </Button>
-                <Button type="submit" disabled={isSaving}>
-                  {isSaving ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Salvando...
-                    </>
-                  ) : (
-                    'Salvar'
-                  )}
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Lista de Usuários</CardTitle>
+          <CardTitle>Lista de Usuários Ativos</CardTitle>
           <CardDescription>
-            {'Visualize e gerencie todos os usuários cadastrados'}
+            {'Consulte usuários ativos e ajuste funções de direção/pedagogia. Criação de professores é feita na tela de Professores.'}
           </CardDescription>
         </CardHeader>
         <CardContent>
