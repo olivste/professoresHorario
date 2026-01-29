@@ -124,7 +124,8 @@ export default function ProfessoresPage() {
       const usuarioPayload = {
         ...formData.usuario,
         username: formData.usuario.username || baseUser,
-        email: formData.usuario.email || `${baseUser || 'user'}@temp.local`,
+        // Evita domínios reservados como .local/.example
+        email: formData.usuario.email || `${baseUser || 'user'}@placeholder.com`,
         telefone: undefined,
       }
 
