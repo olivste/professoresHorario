@@ -7,6 +7,7 @@ from database import models
 from database.database import engine
 from routes import auth, usuarios, professores, disciplinas, turmas, horarios, espacos, reservas, professor_disciplinas, turnos, periodos_aula, turma_disciplinas, professor_bloqueios, professor_disponibilidades, areas
 from seed_curriculo import run as seed_curriculo_run
+from migrations import run_migrations
 from config import (
     ALLOWED_ORIGINS,
     AUTO_CREATE_TABLES,
@@ -66,6 +67,11 @@ app = FastAPI(
 @app.on_event("startup")
 def startup() -> None:
     validate_settings()
+    # Executar migrações automáticas
+    try:
+        run_migrations()
+    except Exception as e:
+        logger.exception("Erro ao executar migrações: %s", e)
     if AUTO_CREATE_TABLES:
         models.Base.metadata.create_all(bind=engine)
     if CREATE_DEFAULT_ADMIN:

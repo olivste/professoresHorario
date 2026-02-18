@@ -226,10 +226,94 @@ def ensure_turma(db: SessionLocal, nome: str, ano: str, turno_id: int, curso: st
     return crud.create_turma(db, schemas.TurmaCreate(nome=nome, ano=ano, turno_id=turno_id, curso=curso))
 
 
+def ensure_area(db: SessionLocal, nome: str, descricao: str, cor: str) -> models.Area:
+    """Garante que uma área existe no banco, criando se necessário"""
+    existing = db.query(models.Area).filter(models.Area.nome == nome).first()
+    if existing:
+        return existing
+    area = models.Area(nome=nome, descricao=descricao, cor=cor, ativa=True)
+    db.add(area)
+    db.commit()
+    db.refresh(area)
+    return area
+
+
+def ensure_area_planejamento(db: SessionLocal, area_id: int, dia_semana: str, hora_inicio: str, hora_fim: str, descricao: str):
+    """Garante que um planejamento existe para uma área"""
+    h_i = time(int(hora_inicio.split(":")[0]), int(hora_inicio.split(":")[1]))
+    h_f = time(int(hora_fim.split(":")[0]), int(hora_fim.split(":")[1]))
+    
+    existing = db.query(models.AreaPlanejamento).filter(
+        models.AreaPlanejamento.area_id == area_id,
+        models.AreaPlanejamento.dia_semana == dia_semana
+    ).first()
+    
+    if existing:
+        return existing
+    
+    planejamento = models.AreaPlanejamento(
+        area_id=area_id,
+        dia_semana=dia_semana,
+        hora_inicio=h_i,
+        hora_fim=h_f,
+        descricao=descricao
+    )
+    db.add(planejamento)
+    db.commit()
+    db.refresh(planejamento)
+    return planejamento
+
+
 def run():
     db = SessionLocal()
     try:
         print("==> Iniciando seed do currículo...")
+        
+        # Criar áreas padrão
+        areas_padrao = [
+            {
+                "nome": "Matemática e suas Tecnologias",
+                "descricao": "Matemática, Física",
+                "cor": "#3b82f6",
+                "planejamento": {"dia": "terca", "inicio": "13:10", "fim": "14:00"}
+            },
+            {
+                "nome": "Linguagens e suas Tecnologias",
+                "descricao": "Português, Inglês, Arte, Educação Física",
+                "cor": "#10b981",
+                "planejamento": {"dia": "quarta", "inicio": "13:10", "fim": "14:00"}
+            },
+            {
+                "nome": "Ciências da Natureza",
+                "descricao": "Física, Química, Biologia",
+                "cor": "#f59e0b",
+                "planejamento": {"dia": "quinta", "inicio": "13:10", "fim": "14:00"}
+            },
+            {
+                "nome": "Ciências Humanas e Sociais",
+                "descricao": "História, Geografia, Sociologia, Filosofia",
+                "cor": "#ef4444",
+                "planejamento": {"dia": "sexta", "inicio": "13:10", "fim": "14:00"}
+            },
+        ]
+        
+        for area_config in areas_padrao:
+            area = ensure_area(db, area_config["nome"], area_config["descricao"], area_config["cor"])
+            print(f"Área garantida: {area.nome} (id={area.id})")
+            
+            # Criar planejamento para a área
+            if "planejamento" in area_config:
+                plan = area_config["planejamento"]
+                ensure_area_planejamento(
+                    db, 
+                    area.id, 
+                    plan["dia"], 
+                    plan["inicio"], 
+                    plan["fim"],
+                    "Planejamento semanal"
+                )
+                print(f"  Planejamento: {plan['dia']} {plan['inicio']}-{plan['fim']}")
+        
         # Criar turnos
         turnos_cache = {}
         for chave in set(v["turno"] for v in CURRICULOS.values()):
