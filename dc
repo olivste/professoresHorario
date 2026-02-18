@@ -1,0 +1,4 @@
+#!/bin/bash
+export DOCKER_CONFIG="/DATA/Felipe/suave-docker/.docker"
+export BUILDX_CONFIG="/DATA/Felipe/suave-docker/.buildx"
+exec docker compose "$@"
