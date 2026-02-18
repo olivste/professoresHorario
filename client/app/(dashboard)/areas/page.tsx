@@ -85,6 +85,7 @@ export default function AreasPage() {
   const [deleteId, setDeleteId] = useState<number | null>(null)
   const [editingArea, setEditingArea] = useState<Area | null>(null)
   const [selectedArea, setSelectedArea] = useState<Area | null>(null)
+  const [editingPlanejamento, setEditingPlanejamento] = useState<AreaPlanejamento | null>(null)
   const { toast } = useToast()
 
   const [formData, setFormData] = useState({
@@ -95,7 +96,7 @@ export default function AreasPage() {
   })
 
   const [planejamentoFormData, setPlanejamentoFormData] = useState({
-    dia_semana: '',
+    dia_semana: 'segunda', // Não pode ser string vazia
     hora_inicio: '',
     hora_fim: '',
     descricao: '',
@@ -110,10 +111,11 @@ export default function AreasPage() {
       setIsLoading(true)
       const data = await apiClient.get<Area[]>('/areas/?limit=1000')
       setAreas(data)
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Erro ao carregar áreas:', error)
       toast({
         title: 'Erro',
-        description: 'Não foi possível carregar as áreas',
+        description: error.message || 'Não foi possível carregar as áreas',
         variant: 'destructive',
       })
     } finally {
@@ -142,14 +144,28 @@ export default function AreasPage() {
     setIsDialogOpen(true)
   }
 
-  function handleOpenPlanejamentoDialog(area: Area) {
+  function handleOpenPlanejamentoDialog(area: Area, planejamento?: AreaPlanejamento) {
     setSelectedArea(area)
-    setPlanejamentoFormData({
-      dia_semana: '',
-      hora_inicio: '',
-      hora_fim: '',
-      descricao: '',
-    })
+    
+    if (planejamento) {
+      // Editando planejamento existente
+      setEditingPlanejamento(planejamento)
+      setPlanejamentoFormData({
+        dia_semana: planejamento.dia_semana,
+        hora_inicio: planejamento.hora_inicio.substring(0, 5), // Remove segundos
+        hora_fim: planejamento.hora_fim.substring(0, 5),
+        descricao: planejamento.descricao || '',
+      })
+    } else {
+      // Novo planejamento
+      setEditingPlanejamento(null)
+      setPlanejamentoFormData({
+        dia_semana: 'segunda',
+        hora_inicio: '',
+        hora_fim: '',
+        descricao: '',
+      })
+    }
     setIsPlanejamentoDialogOpen(true)
   }
 
@@ -190,17 +206,28 @@ export default function AreasPage() {
 
     setIsSaving(true)
     try {
-      await apiClient.post(`/areas/${selectedArea.id}/planejamentos`, planejamentoFormData)
-      toast({
-        title: 'Sucesso',
-        description: 'Planejamento adicionado com sucesso',
-      })
+      if (editingPlanejamento) {
+        // Atualizando planejamento existente
+        await apiClient.put(`/areas/${selectedArea.id}/planejamentos/${editingPlanejamento.id}`, planejamentoFormData)
+        toast({
+          title: 'Sucesso',
+          description: 'Planejamento atualizado com sucesso',
+        })
+      } else {
+        // Criando novo planejamento
+        await apiClient.post(`/areas/${selectedArea.id}/planejamentos`, planejamentoFormData)
+        toast({
+          title: 'Sucesso',
+          description: 'Planejamento adicionado com sucesso',
+        })
+      }
       setIsPlanejamentoDialogOpen(false)
+      setEditingPlanejamento(null)
       loadAreas()
     } catch (error: any) {
       toast({
         title: 'Erro',
-        description: error.message || 'Não foi possível adicionar o planejamento',
+        description: error.message || `Não foi possível ${editingPlanejamento ? 'atualizar' : 'adicionar'} o planejamento`,
         variant: 'destructive',
       })
     } finally {
@@ -436,15 +463,58 @@ export default function AreasPage() {
         </CardContent>
       </Card>
 
-      {/* Dialog para adicionar planejamento */}
+      {/* Dialog para adicionar/editar planejamento */}
       <Dialog open={isPlanejamentoDialogOpen} onOpenChange={setIsPlanejamentoDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Adicionar Horário de Planejamento</DialogTitle>
+            <DialogTitle>
+              {editingPlanejamento ? 'Editar' : 'Gerenciar'} Horários de Planejamento
+            </DialogTitle>
             <DialogDescription>
-              Defina o horário de planejamento para a área {selectedArea?.nome}
+              Área: {selectedArea?.nome}
             </DialogDescription>
           </DialogHeader>
+
+          {/* Lista de planejamentos existentes */}
+          {!editingPlanejamento && selectedArea && selectedArea.planejamentos.length > 0 && (
+            <div className="space-y-2 border-b pb-4 mb-4">
+              <h4 className="text-sm font-medium">Horários configurados:</h4>
+              <div className="space-y-2">
+                {selectedArea.planejamentos.map((p) => (
+                  <div key={p.id} className="flex items-center justify-between p-2 bg-muted rounded-md">
+                    <div className="flex-1">
+                      <div className="font-medium text-sm">
+                        {DIAS_SEMANA.find(d => d.valor === p.dia_semana)?.label}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {p.hora_inicio.substring(0, 5)} - {p.hora_fim.substring(0, 5)}
+                        {p.descricao && ` • ${p.descricao}`}
+                      </div>
+                    </div>
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => handleOpenPlanejamentoDialog(selectedArea, p)}
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => handleDeletePlanejamento(selectedArea.id, p.id)}
+                      >
+                        <Trash2 className="h-3 w-3 text-destructive" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <form onSubmit={handleSubmitPlanejamento} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="dia_semana">Dia da Semana*</Label>
@@ -513,14 +583,17 @@ export default function AreasPage() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setIsPlanejamentoDialogOpen(false)}
+                onClick={() => {
+                  setIsPlanejamentoDialogOpen(false)
+                  setEditingPlanejamento(null)
+                }}
                 disabled={isSaving}
               >
                 Cancelar
               </Button>
               <Button type="submit" disabled={isSaving}>
                 {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                Adicionar
+                {editingPlanejamento ? 'Atualizar' : 'Adicionar'}
               </Button>
             </div>
           </form>
