@@ -70,6 +70,11 @@ def test_e2e_full_api_flow():
     assert turma_resp.status_code == 200, turma_resp.text
     turma_id = turma_resp.json()["id"]
 
+    # Vincular disciplina à turma
+    turma_disc_payload = {"turma_id": turma_id, "disciplina_id": disc_id}
+    turma_disc_resp = requests.post(_url("/turma-disciplinas"), json=turma_disc_payload, headers=headers, timeout=10)
+    assert turma_disc_resp.status_code == 200, turma_disc_resp.text
+
     # Professor (com usuário novo)
     prof_payload = {
         "departamento": "Matemática",

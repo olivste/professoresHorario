@@ -524,19 +524,19 @@ def delete_disciplina(db: Session, disciplina_id: int):
     return False
 
 def delete_turma(db: Session, turma_id: int):
-    """Remove uma turma (hard delete, cuidado com relacionamentos)"""
+    """Desativa uma turma (soft delete)"""
     db_turma = db.query(models.Turma).filter(models.Turma.id == turma_id).first()
     if db_turma:
-        db.delete(db_turma)
+        db_turma.ativa = False
         db.commit()
         return True
     return False
 
 def delete_espaco_escola(db: Session, espaco_id: int):
-    """Remove um espaço escolar (hard delete)"""
+    """Desativa um espaço escolar (soft delete)"""
     db_espaco = db.query(models.EspacoEscola).filter(models.EspacoEscola.id == espaco_id).first()
     if db_espaco:
-        db.delete(db_espaco)
+        db_espaco.ativo = False
         db.commit()
         return True
     return False

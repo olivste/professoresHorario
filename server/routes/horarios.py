@@ -1,10 +1,13 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Response
 from sqlalchemy.orm import Session
 from typing import List
 
 from database import models, schemas
 import crud_new as crud
 from database.database import SessionLocal
+from io import BytesIO
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
 
 router = APIRouter(prefix="/horarios", tags=["Horários"])
 
@@ -145,9 +148,92 @@ def update_horario(horario_id: int, horario: schemas.HorarioUpdate, db: Session 
 
     return crud.update_horario(db, horario_id=horario_id, horario=horario)
 
-@router.delete("/{horario_id}", status_code=204)
+@router.delete("/{horario_id}")
 def delete_horario(horario_id: int, db: Session = Depends(get_db)):
     success = crud.delete_horario(db, horario_id=horario_id)
     if not success:
         raise HTTPException(status_code=404, detail="Horário não encontrado")
-    return None
+    return {"message": "Horário removido"}
+
+@router.get("/por-professor/{professor_id}")
+def horarios_por_professor(professor_id: int, db: Session = Depends(get_db)):
+    """Retorna horários agrupados por dia da semana com joins de turma/turno/disciplina."""
+    prof = crud.get_professor(db, professor_id)
+    if not prof:
+        raise HTTPException(status_code=404, detail="Professor não encontrado")
+
+    horarios = db.query(models.Horario).filter(models.Horario.professor_id == professor_id).all()
+    grouped: dict[str, list] = {}
+    for h in horarios:
+        dia = h.dia_semana.value if hasattr(h.dia_semana, "value") else str(h.dia_semana)
+        item = {
+            "id": h.id,
+            "hora_inicio": h.hora_inicio.isoformat(),
+            "hora_fim": h.hora_fim.isoformat(),
+            "sala": h.sala,
+            "observacoes": h.observacoes,
+            "disciplina": {
+                "id": h.disciplina.id,
+                "nome": h.disciplina.nome,
+                "codigo": h.disciplina.codigo,
+            },
+            "turma": {
+                "id": h.turma.id,
+                "nome": h.turma.nome,
+                "ano": h.turma.ano,
+            },
+            "turno": {
+                "id": h.turno.id,
+                "nome": h.turno.nome,
+            },
+        }
+        grouped.setdefault(dia, []).append(item)
+
+    return {
+        "professor": {
+            "id": prof.id,
+            "nome": prof.usuario.nome,
+        },
+        "horarios": grouped,
+    }
+
+@router.get("/por-professor/{professor_id}/pdf")
+def horarios_por_professor_pdf(professor_id: int, db: Session = Depends(get_db)):
+    """Gera um PDF simples com os horários do professor agrupados por dia."""
+    prof = crud.get_professor(db, professor_id)
+    if not prof:
+        raise HTTPException(status_code=404, detail="Professor não encontrado")
+
+    horarios = db.query(models.Horario).filter(models.Horario.professor_id == professor_id).order_by(models.Horario.dia_semana, models.Horario.hora_inicio).all()
+    buf = BytesIO()
+    c = canvas.Canvas(buf, pagesize=A4)
+    width, height = A4
+    y = height - 50
+    c.setFont("Helvetica-Bold", 14)
+    c.drawString(50, y, f"Horários do Professor: {prof.usuario.nome}")
+    y -= 30
+    c.setFont("Helvetica", 11)
+
+    current_day = None
+    for h in horarios:
+        dia = h.dia_semana.value if hasattr(h.dia_semana, "value") else str(h.dia_semana)
+        if dia != current_day:
+            current_day = dia
+            y -= 20
+            c.setFont("Helvetica-Bold", 12)
+            c.drawString(50, y, dia.capitalize())
+            y -= 18
+            c.setFont("Helvetica", 11)
+        line = f"{h.hora_inicio.strftime('%H:%M')} - {h.hora_fim.strftime('%H:%M')} | {h.disciplina.nome} | Turma {h.turma.nome} | Sala {h.sala or '-'}"
+        c.drawString(60, y, line)
+        y -= 16
+        if y < 80:
+            c.showPage()
+            y = height - 50
+            c.setFont("Helvetica", 11)
+
+    c.showPage()
+    c.save()
+    pdf_bytes = buf.getvalue()
+    buf.close()
+    return Response(content=pdf_bytes, media_type="application/pdf")

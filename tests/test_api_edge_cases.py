@@ -80,6 +80,16 @@ def _create_school_entities(headers: dict) -> dict:
     assert prof.status_code == 200, prof.text
     prof_id = prof.json()["id"]
 
+    # Vincular professor-disciplina
+    prof_disc_payload = {"professor_id": prof_id, "disciplina_id": disc_id, "carga_horaria": 2}
+    prof_disc_resp = requests.post(_url("/professor-disciplinas"), json=prof_disc_payload, headers=headers, timeout=10)
+    assert prof_disc_resp.status_code == 200, prof_disc_resp.text
+
+    # Vincular turma-disciplina
+    turma_disc_payload = {"turma_id": turma_id, "disciplina_id": disc_id}
+    turma_disc_resp = requests.post(_url("/turma-disciplinas"), json=turma_disc_payload, headers=headers, timeout=10)
+    assert turma_disc_resp.status_code == 200, turma_disc_resp.text
+
     return {
         "turno_id": turno_id,
         "disciplina_id": disc_id,

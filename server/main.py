@@ -1,6 +1,6 @@
 import logging
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 
 from database import models
@@ -96,16 +96,16 @@ def health_check():
 
 # Include all routers
 app.include_router(auth.router)
-app.include_router(usuarios.router)
-app.include_router(professores.router)
-app.include_router(disciplinas.router)
-app.include_router(turmas.router)
-app.include_router(turnos.router)
-app.include_router(periodos_aula.router)
-app.include_router(horarios.router)
-app.include_router(espacos.router)
-app.include_router(reservas.router)
-app.include_router(professor_disciplinas.router)
-app.include_router(turma_disciplinas.router)
-app.include_router(professor_bloqueios.router)
-app.include_router(professor_disponibilidades.router)
+app.include_router(usuarios.router, dependencies=[Depends(auth.get_current_active_user)])
+app.include_router(professores.router, dependencies=[Depends(auth.get_current_active_user)])
+app.include_router(disciplinas.router, dependencies=[Depends(auth.get_current_active_user)])
+app.include_router(turmas.router, dependencies=[Depends(auth.get_current_active_user)])
+app.include_router(turnos.router, dependencies=[Depends(auth.get_current_active_user)])
+app.include_router(periodos_aula.router, dependencies=[Depends(auth.get_current_active_user)])
+app.include_router(horarios.router, dependencies=[Depends(auth.get_current_active_user)])
+app.include_router(espacos.router, dependencies=[Depends(auth.get_current_active_user)])
+app.include_router(reservas.router, dependencies=[Depends(auth.get_current_active_user)])
+app.include_router(professor_disciplinas.router, dependencies=[Depends(auth.get_current_active_user)])
+app.include_router(turma_disciplinas.router, dependencies=[Depends(auth.get_current_active_user)])
+app.include_router(professor_bloqueios.router, dependencies=[Depends(auth.get_current_active_user)])
+app.include_router(professor_disponibilidades.router, dependencies=[Depends(auth.get_current_active_user)])
