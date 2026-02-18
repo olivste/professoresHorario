@@ -549,3 +549,84 @@ def delete_reserva_espaco(db: Session, reserva_id: int):
         db.commit()
         return True
     return False
+
+# ================================
+# AREA CRUD OPERATIONS
+# ================================
+
+def get_area(db: Session, area_id: int):
+    return db.query(models.Area).filter(models.Area.id == area_id).first()
+
+def get_areas(db: Session, skip: int = 0, limit: int = 100, ativas_apenas: bool = True):
+    query = db.query(models.Area)
+    if ativas_apenas:
+        query = query.filter(models.Area.ativa == True)
+    return query.offset(skip).limit(limit).all()
+
+def create_area(db: Session, area: schemas.AreaCreate):
+    db_area = models.Area(**area.model_dump())
+    db.add(db_area)
+    db.commit()
+    db.refresh(db_area)
+    return db_area
+
+def update_area(db: Session, area_id: int, area: schemas.AreaUpdate):
+    db_area = db.query(models.Area).filter(models.Area.id == area_id).first()
+    if db_area:
+        update_data = area.model_dump(exclude_unset=True)
+        for field, value in update_data.items():
+            setattr(db_area, field, value)
+        db.commit()
+        db.refresh(db_area)
+    return db_area
+
+def delete_area(db: Session, area_id: int):
+    """Desativa uma área (soft delete)"""
+    db_area = db.query(models.Area).filter(models.Area.id == area_id).first()
+    if db_area:
+        db_area.ativa = False
+        db.commit()
+        return True
+    return False
+
+# ================================
+# AREA PLANEJAMENTO CRUD OPERATIONS
+# ================================
+
+def get_area_planejamento(db: Session, planejamento_id: int):
+    return db.query(models.AreaPlanejamento).filter(models.AreaPlanejamento.id == planejamento_id).first()
+
+def get_area_planejamentos(db: Session, area_id: int):
+    return db.query(models.AreaPlanejamento).filter(models.AreaPlanejamento.area_id == area_id).all()
+
+def create_area_planejamento(db: Session, area_id: int, planejamento: schemas.AreaPlanejamentoCreate):
+    planejamento_data = planejamento.model_dump()
+    db_planejamento = models.AreaPlanejamento(**planejamento_data, area_id=area_id)
+    db.add(db_planejamento)
+    db.commit()
+    db.refresh(db_planejamento)
+    return db_planejamento
+
+def update_area_planejamento(db: Session, planejamento_id: int, planejamento: schemas.AreaPlanejamentoUpdate):
+    db_planejamento = db.query(models.AreaPlanejamento).filter(models.AreaPlanejamento.id == planejamento_id).first()
+    if db_planejamento:
+        update_data = planejamento.model_dump(exclude_unset=True)
+        for field, value in update_data.items():
+            setattr(db_planejamento, field, value)
+        db.commit()
+        db.refresh(db_planejamento)
+    return db_planejamento
+
+def delete_area_planejamento(db: Session, planejamento_id: int):
+    """Remove um planejamento de área"""
+    db_planejamento = db.query(models.AreaPlanejamento).filter(models.AreaPlanejamento.id == planejamento_id).first()
+    if db_planejamento:
+        db.delete(db_planejamento)
+        db.commit()
+        return True
+    return False
+
+def get_professores_by_area(db: Session, area_id: int):
+    """Retorna todos os professores de uma área específica"""
+    return db.query(models.Professor).filter(models.Professor.area_id == area_id).all()
+

@@ -143,6 +143,7 @@ class Usuario(UsuarioBase):
 
 # Professor schemas
 class ProfessorBase(BaseModel):
+    area_id: Optional[int] = None
     departamento: Optional[str] = None
     especializacao: Optional[str] = None
     carga_horaria_semanal: int = 40
@@ -418,6 +419,55 @@ class ReservaEspaco(ReservaEspacoBase):
     updated_at: Optional[datetime] = None
     espaco: EspacoEscola
     solicitante: Usuario
+
+    class Config:
+        from_attributes = True
+
+# Area schemas
+class AreaBase(BaseModel):
+    nome: str
+    descricao: Optional[str] = None
+    cor: Optional[str] = None
+    ativa: bool = True
+
+class AreaCreate(AreaBase):
+    pass
+
+class AreaUpdate(BaseModel):
+    nome: Optional[str] = None
+    descricao: Optional[str] = None
+    cor: Optional[str] = None
+    ativa: Optional[bool] = None
+
+class AreaPlanejamentoBase(BaseModel):
+    dia_semana: DiaSemanaEnum
+    hora_inicio: time
+    hora_fim: time
+    descricao: Optional[str] = None
+
+class AreaPlanejamentoCreate(AreaPlanejamentoBase):
+    pass
+
+class AreaPlanejamentoUpdate(BaseModel):
+    dia_semana: Optional[DiaSemanaEnum] = None
+    hora_inicio: Optional[time] = None
+    hora_fim: Optional[time] = None
+    descricao: Optional[str] = None
+
+class AreaPlanejamento(AreaPlanejamentoBase):
+    id: int
+    area_id: int
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+class Area(AreaBase):
+    id: int
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+    planejamentos: List[AreaPlanejamento] = []
 
     class Config:
         from_attributes = True

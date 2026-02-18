@@ -13,6 +13,7 @@ import {
   Users,
   User,
   LogOut,
+  Folders,
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -60,6 +61,11 @@ const managementItems = [
     title: 'Turmas',
     icon: User,
     href: '/turmas',
+  },
+  {
+    title: 'Áreas',
+    icon: Folders,
+    href: '/areas',
   },
 ]
 

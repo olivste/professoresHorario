@@ -102,6 +102,7 @@ class Professor(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     usuario_id = Column(Integer, ForeignKey("usuarios.id"), unique=True, nullable=False)
+    area_id = Column(Integer, ForeignKey("areas.id"), nullable=True)  # Área do professor para planejamento
     departamento = Column(String(100))
     especializacao = Column(String(200))
     carga_horaria_semanal = Column(Integer, default=40)
@@ -111,6 +112,7 @@ class Professor(Base):
 
     # Relacionamentos
     usuario = relationship("Usuario", back_populates="professor")
+    area = relationship("Area", back_populates="professores")
     horarios = relationship("Horario", back_populates="professor", cascade="all, delete-orphan")
     professor_disciplinas = relationship("ProfessorDisciplina", back_populates="professor")
 
@@ -301,3 +303,46 @@ class ReservaEspaco(Base):
     espaco = relationship("EspacoEscola", back_populates="reservas")
     solicitante = relationship("Usuario", back_populates="reservas", foreign_keys=[solicitante_id])
     aprovador = relationship("Usuario", foreign_keys=[aprovado_por])
+class Area(Base):
+    __tablename__ = "areas"
+
+    id = Column(Integer, primary_key=True, index=True)
+    nome = Column(String(100), nullable=False, unique=True)  # Ex: Matemática, Linguagens, Ciências
+    descricao = Column(Text)
+    cor = Column(String(7))  # Código hexadecimal de cor para identificação visual
+    ativa = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    # Relacionamentos
+    planejamentos = relationship("AreaPlanejamento", back_populates="area", cascade="all, delete-orphan")
+    professores = relationship("Professor", back_populates="area")
+
+class AreaPlanejamento(Base):
+    __tablename__ = "area_planejamentos"
+
+    id = Column(Integer, primary_key=True, index=True)
+    area_id = Column(Integer, ForeignKey("areas.id"), nullable=False)
+    dia_semana = Column(
+        Enum(
+            DiaSemanaEnum,
+            values_callable=lambda enum_cls: [e.value for e in enum_cls],
+            validate_strings=True,
+            native_enum=False,
+            name="diasemanaenum",
+        ),
+        nullable=False,
+    )
+    hora_inicio = Column(Time, nullable=False)
+    hora_fim = Column(Time, nullable=False)
+    descricao = Column(Text)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    # Relacionamentos
+    area = relationship("Area", back_populates="planejamentos")
+
+    # Garantir que a combinação de area_id e dia_semana seja única
+    __table_args__ = (
+        UniqueConstraint('area_id', 'dia_semana', name='uq_area_planejamento_dia'),
+    )

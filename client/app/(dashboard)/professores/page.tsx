@@ -27,8 +27,17 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 
+interface Area {
+  id: number
+  nome: string
+  descricao?: string
+  cor?: string
+  ativa: boolean
+}
+
 interface Professor {
   id: number
+  area_id?: number
   departamento: string
   especializacao?: string
   carga_horaria_semanal: number
@@ -82,6 +91,7 @@ function makeEmail(localPart: string): string {
 
 export default function ProfessoresPage() {
   const [professores, setProfessores] = useState<Professor[]>([])
+  const [areas, setAreas] = useState<Area[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isEditOpen, setIsEditOpen] = useState(false)
@@ -95,6 +105,7 @@ export default function ProfessoresPage() {
   const { toast } = useToast()
 
   const [formData, setFormData] = useState({
+    area_id: undefined as number | undefined,
     departamento: '',
     especializacao: '',
     carga_horaria_semanal: 40,
@@ -113,6 +124,7 @@ export default function ProfessoresPage() {
 
   useEffect(() => {
     loadProfessores()
+    loadAreas()
   }, [])
 
   // Auto-generate username as first.last when name changes
@@ -143,6 +155,15 @@ export default function ProfessoresPage() {
     }
   }
 
+  async function loadAreas() {
+    try {
+      const data = await apiClient.get<Area[]>('/areas/?limit=1000')
+      setAreas(data)
+    } catch (error) {
+      console.error('Erro ao carregar áreas', error)
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setIsSaving(true)
@@ -161,6 +182,7 @@ export default function ProfessoresPage() {
       }
 
       const profPayload = {
+        area_id: formData.area_id,
         departamento: formData.departamento,
         especializacao: undefined,
         carga_horaria_semanal: formData.carga_horaria_semanal,
@@ -270,6 +292,7 @@ export default function ProfessoresPage() {
     setIsSaving(true)
     try {
       const payload = {
+        area_id: editing.area_id,
         departamento: editing.departamento,
         especializacao: editing.especializacao,
         carga_horaria_semanal: editing.carga_horaria_semanal,
@@ -289,6 +312,7 @@ export default function ProfessoresPage() {
 
   function resetForm() {
     setFormData({
+      area_id: undefined,
       departamento: '',
       especializacao: '',
       carga_horaria_semanal: 40,
@@ -311,6 +335,20 @@ export default function ProfessoresPage() {
       accessorKey: 'usuario.nome',
       header: 'Nome',
     // Removed Especialização and Email columns per request
+    },
+    {
+      accessorKey: 'area_id',
+      header: 'Área',
+      cell: ({ row }) => {
+        const area = areas.find(a => a.id === row.original.area_id)
+        return area ? (
+          <Badge variant="outline" style={{ backgroundColor: area.cor || '#666', color: '#fff' }}>
+            {area.nome}
+          </Badge>
+        ) : (
+          <span className="text-muted-foreground text-sm">-</span>
+        )
+      },
     },
     {
       accessorKey: 'carga_horaria_semanal',
@@ -430,6 +468,25 @@ export default function ProfessoresPage() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
+                    <Label htmlFor="area">Área de Conhecimento</Label>
+                    <Select
+                      value={formData.area_id?.toString() || ''}
+                      onValueChange={(value) => setFormData({ ...formData, area_id: value ? Number(value) : undefined })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione a área" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Nenhuma</SelectItem>
+                        {areas.filter(a => a.ativa).map((area) => (
+                          <SelectItem key={area.id} value={area.id.toString()}>
+                            {area.nome}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
                     <Label htmlFor="departamento">Departamento*</Label>
                     <Input id="departamento" required value={formData.departamento} onChange={(e)=> setFormData({ ...formData, departamento: e.target.value })} />
                   </div>
@@ -520,6 +577,25 @@ export default function ProfessoresPage() {
           </DialogHeader>
           {editing && (
             <form onSubmit={handleUpdate} className="space-y-4">
+              <div className="space-y-2">
+                <Label>Área de Conhecimento</Label>
+                <Select
+                  value={editing.area_id?.toString() || ''}
+                  onValueChange={(value) => setEditing({ ...editing, area_id: value ? Number(value) : undefined })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a área" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Nenhuma</SelectItem>
+                    {areas.filter(a => a.ativa).map((area) => (
+                      <SelectItem key={area.id} value={area.id.toString()}>
+                        {area.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Departamento*</Label>
