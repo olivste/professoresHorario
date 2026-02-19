@@ -106,7 +106,6 @@ export default function ProfessoresPage() {
 
   const [formData, setFormData] = useState({
     area_id: undefined as number | undefined,
-    departamento: '',
     especializacao: '',
     carga_horaria_semanal: 40,
     observacoes: '',
@@ -163,7 +162,33 @@ export default function ProfessoresPage() {
       console.error('Erro ao carregar áreas', error)
     }
   }
+  async function handleAreaSelect(areaId: string) {
+    const numAreaId = areaId && areaId !== 'none' ? Number(areaId) : undefined
+    
+    setFormData({ ...formData, area_id: numAreaId })
 
+    if (!numAreaId) return
+
+    // Carregar planejamento da área
+    try {
+      const area = areas.find(a => a.id === numAreaId)
+      if (area && 'planejamentos' in area) {
+        const planejamentos = (area as any).planejamentos || []
+        // Preencher disponibilidades com os planejamentos
+        const novasDisponibilidades = planejamentos.map((p: any) => ({
+          dia_semana: p.dia_semana,
+          hora_inicio: p.hora_inicio.substring(0, 5),
+          hora_fim: p.hora_fim.substring(0, 5),
+        }))
+        setFormData(prev => ({
+          ...prev,
+          disponibilidades: novasDisponibilidades,
+        }))
+      }
+    } catch (error) {
+      console.error('Erro ao carregar planejamentos:', error)
+    }
+  }
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setIsSaving(true)
@@ -183,7 +208,6 @@ export default function ProfessoresPage() {
 
       const profPayload = {
         area_id: formData.area_id,
-        departamento: formData.departamento,
         especializacao: undefined,
         carga_horaria_semanal: formData.carga_horaria_semanal,
         observacoes: formData.observacoes,
@@ -293,7 +317,6 @@ export default function ProfessoresPage() {
     try {
       const payload = {
         area_id: editing.area_id,
-        departamento: editing.departamento,
         especializacao: editing.especializacao,
         carga_horaria_semanal: editing.carga_horaria_semanal,
         observacoes: editing.observacoes,
@@ -313,7 +336,6 @@ export default function ProfessoresPage() {
   function resetForm() {
     setFormData({
       area_id: undefined,
-      departamento: '',
       especializacao: '',
       carga_horaria_semanal: 40,
       observacoes: '',
@@ -471,7 +493,7 @@ export default function ProfessoresPage() {
                     <Label htmlFor="area">Área de Conhecimento</Label>
                     <Select
                       value={formData.area_id?.toString() || 'none'}
-                      onValueChange={(value) => setFormData({ ...formData, area_id: value && value !== 'none' ? Number(value) : undefined })}
+                      onValueChange={handleAreaSelect}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione a área" />
@@ -485,10 +507,6 @@ export default function ProfessoresPage() {
                         ))}
                       </SelectContent>
                     </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="departamento">Departamento*</Label>
-                    <Input id="departamento" required value={formData.departamento} onChange={(e)=> setFormData({ ...formData, departamento: e.target.value })} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="carga_horaria">Carga Horária Semanal*</Label>
@@ -596,24 +614,14 @@ export default function ProfessoresPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Departamento*</Label>
-                  <Input
-                    value={editing.departamento}
-                    onChange={(e)=> setEditing({ ...editing, departamento: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Carga Horária Semanal*</Label>
-                  <Input
-                    type="number"
-                    value={editing.carga_horaria_semanal}
-                    onChange={(e)=> setEditing({ ...editing, carga_horaria_semanal: Number(e.target.value) })}
-                    required
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label>Carga Horária Semanal*</Label>
+                <Input
+                  type="number"
+                  value={editing.carga_horaria_semanal}
+                  onChange={(e)=> setEditing({ ...editing, carga_horaria_semanal: Number(e.target.value) })}
+                  required
+                />
               </div>
               <div className="space-y-2">
                 <Label>Observações</Label>
