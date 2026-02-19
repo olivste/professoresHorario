@@ -190,7 +190,7 @@ class DisciplinaBase(BaseModel):
     ativa: bool = True
 
 class DisciplinaCreate(DisciplinaBase):
-    pass
+    turma_ids: Optional[List[int]] = None
 
 class DisciplinaUpdate(BaseModel):
     nome: Optional[str] = None

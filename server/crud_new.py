@@ -151,10 +151,24 @@ def get_disciplinas(db: Session, skip: int = 0, limit: int = 100, ativas_apenas:
     return query.offset(skip).limit(limit).all()
 
 def create_disciplina(db: Session, disciplina: schemas.DisciplinaCreate):
-    db_disciplina = models.Disciplina(**disciplina.model_dump())
+    # Criar a disciplina sem os turma_ids
+    disciplina_data = disciplina.model_dump(exclude={'turma_ids'})
+    db_disciplina = models.Disciplina(**disciplina_data)
     db.add(db_disciplina)
     db.commit()
     db.refresh(db_disciplina)
+    
+    # Criar associações com turmas se fornecidas
+    if disciplina.turma_ids:
+        for turma_id in disciplina.turma_ids:
+            turma_disciplina = models.TurmaDisciplina(
+                turma_id=turma_id,
+                disciplina_id=db_disciplina.id
+            )
+            db.add(turma_disciplina)
+        db.commit()
+        db.refresh(db_disciplina)
+    
     return db_disciplina
 
 def update_disciplina(db: Session, disciplina_id: int, disciplina: schemas.DisciplinaUpdate):
@@ -225,6 +239,9 @@ def get_turma_disciplinas(db: Session, skip: int = 0, limit: int = 100):
 
 def get_turma_disciplinas_por_turma(db: Session, turma_id: int):
     return db.query(models.TurmaDisciplina).filter(models.TurmaDisciplina.turma_id == turma_id).all()
+
+def get_turmas_disciplina(db: Session, disciplina_id: int):
+    return db.query(models.TurmaDisciplina).filter(models.TurmaDisciplina.disciplina_id == disciplina_id).all()
 
 def delete_turma_disciplina(db: Session, link_id: int):
     link = db.query(models.TurmaDisciplina).filter(models.TurmaDisciplina.id == link_id).first()

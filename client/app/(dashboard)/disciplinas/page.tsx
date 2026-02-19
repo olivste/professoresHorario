@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
+import { Checkbox } from '@/components/ui/checkbox'
 import { apiClient } from '@/lib/api-client'
 import { DataTable } from '@/components/data-table'
 import { Plus, Loader2, Pencil, Trash2 } from 'lucide-react'
@@ -36,98 +37,32 @@ interface Disciplina {
   ativa: boolean
 }
 
+interface Turma {
+  id: number
+  nome: string
+  ano: string
+  turno_id: number
+  curso?: string
+  ativa: boolean
+}
+
+interface TurmaDisciplina {
+  id: number
+  turma_id: number
+  disciplina_id: number
+}
+
 export default function DisciplinasPage() {
   const [disciplinas, setDisciplinas] = useState<Disciplina[]>([])
+  const [turmas, setTurmas] = useState<Turma[]>([])
+  const [disciplinasTurmas, setDisciplinasTurmas] = useState<Map<number, number[]>>(new Map())
   const [isLoading, setIsLoading] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [deleteId, setDeleteId] = useState<number | null>(null)
   const { toast } = useToast()
 
-  // Mapeamento de disciplinas por ano (união das trilhas do seed)
-  // Usado somente para filtro/agrupamento visual na listagem
-  const ANO_DISCIPLINAS: Record<'1' | '2' | '3', Set<string>> = {
-    '1': new Set([
-      'Arte',
-      'Biologia',
-      'Educação Física',
-      'Estudo Orientado',
-      'Filosofia',
-      'Física',
-      'Geografia',
-      'História',
-      'Língua Inglesa',
-      'Língua Portuguesa',
-      'Matemática',
-      'Projeto de Vida',
-      'Práticas e Vivências em Protagonismo',
-      'Eletivas',
-      'Projetos Empreendedores',
-      'Fundamentos da Computação',
-      'Lógica de Programação e Gamificação',
-      'Introdução ao Desenvolvimento Web',
-      'Sociologia',
-    ]),
-    '2': new Set([
-      'Arte',
-      'Biologia',
-      'Educação Física',
-      'Estudo Orientado',
-      'Filosofia',
-      'Física',
-      'Geografia',
-      'História',
-      'Língua Inglesa',
-      'Língua Portuguesa',
-      'Matemática',
-      'Projeto de Vida',
-      'Eletiva',
-      'Prática Experimental',
-      'Cultura Digital',
-      'Introdução à Rede de Computadores e Protocolos',
-      'Linguagem de Programação Aplicada à Web',
-      'IOT – Internet of Things',
-      'Banco de Dados',
-      'Aplicativos Web',
-      'Química',
-      'Aprofundamento em Biologia',
-      'Aprofundamento em Física',
-      'Aprofundamento em Química',
-      'Aprofundamento em Matemática',
-      'Sociologia',
-    ]),
-    '3': new Set([
-      'Biologia',
-      'Estudo Orientado',
-      'Geografia',
-      'História',
-      'Língua Inglesa',
-      'Língua Portuguesa',
-      'Matemática',
-      'Projeto de Vida',
-      'Eletiva',
-      'Prática Experimental',
-      'Análise e Projetos de Sistemas',
-      'Arquitetura, Segurança e Projetos de Redes',
-      'Programação para Web Design',
-      'Linguagem de Programação Orientada a Objetos',
-      'Desenvolvimento de Sistemas',
-      'Desenvolvimento de Games',
-      'Português Instrumental',
-      'Desenho Técnico',
-      'Matemática e Sociedade',
-      'Fontes de Obtenção de Energia',
-      'A Física e as Matrizes Energéticas',
-      'Matéria e Energia',
-      'Física',
-      'Química',
-      'Sociologia',
-      'Arte',
-    ]),
-  }
-
-  type AnoFiltro = 'todas' | '1' | '2' | '3'
-  const [anoFiltro, setAnoFiltro] = useState<AnoFiltro>('todas')
+  const [turmaFiltro, setTurmaFiltro] = useState<number | null>(null)
 
   const [formData, setFormData] = useState({
     nome: '',
@@ -135,10 +70,13 @@ export default function DisciplinasPage() {
     carga_horaria_semanal: 4,
     descricao: '',
     ativa: true,
+    turma_ids: [] as number[],
   })
 
   useEffect(() => {
     loadDisciplinas()
+    loadTurmas()
+    loadDisciplinasTurmas()
   }, [])
 
   async function loadDisciplinas() {
@@ -153,6 +91,36 @@ export default function DisciplinasPage() {
       })
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  async function loadTurmas() {
+    try {
+      const data = await apiClient.get<Turma[]>('/turmas/?limit=1000&ativas_apenas=true')
+      setTurmas(data)
+    } catch (error) {
+      toast({
+        title: 'Erro',
+        description: 'Erro ao carregar turmas',
+        variant: 'destructive',
+      })
+    }
+  }
+
+  async function loadDisciplinasTurmas() {
+    try {
+      const disciplinasData = await apiClient.get<Disciplina[]>('/disciplinas/?limit=1000')
+      const mapa = new Map<number, number[]>()
+      
+      for (const disciplina of disciplinasData) {
+        const turmasDisciplina = await apiClient.get<TurmaDisciplina[]>(`/disciplinas/${disciplina.id}/turmas/`)
+        const turmaIds = turmasDisciplina.map(td => td.turma_id)
+        mapa.set(disciplina.id, turmaIds)
+      }
+      
+      setDisciplinasTurmas(mapa)
+    } catch (error) {
+      console.error('Erro ao carregar associações de disciplinas e turmas:', error)
     }
   }
 
@@ -206,6 +174,7 @@ export default function DisciplinasPage() {
       carga_horaria_semanal: 4,
       descricao: '',
       ativa: true,
+      turma_ids: [],
     })
   }
 
@@ -263,12 +232,11 @@ export default function DisciplinasPage() {
     },
   ]
 
-  // Aplica filtro por ano com base no mapeamento acima
+  // Aplica filtro por turma selecionada
   const disciplinasFiltradas = React.useMemo(() => {
-    if (anoFiltro === 'todas') return disciplinas
-    const nomesPermitidos = ANO_DISCIPLINAS[anoFiltro]
-    return disciplinas.filter(d => nomesPermitidos.has(d.nome))
-  }, [disciplinas, anoFiltro])
+    if (turmaFiltro === null) return disciplinas
+    return disciplinas.filter(d => disciplinasTurmas.get(d.id)?.includes(turmaFiltro) ?? false)
+  }, [disciplinas, turmaFiltro, disciplinasTurmas])
 
   return (
     <div className="space-y-6">
@@ -355,6 +323,43 @@ export default function DisciplinasPage() {
                 <Label htmlFor="ativa">Disciplina ativa</Label>
               </div>
 
+              <div className="space-y-2">
+                <Label>Atribuir a Turmas *</Label>
+                <div className="border rounded-md p-3 max-h-48 overflow-y-auto space-y-2 bg-muted/50">
+                  {turmas.length > 0 ? (
+                    turmas.map(turma => (
+                      <div key={turma.id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`turma-${turma.id}`}
+                          checked={formData.turma_ids.includes(turma.id)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setFormData({
+                                ...formData,
+                                turma_ids: [...formData.turma_ids, turma.id]
+                              })
+                            } else {
+                              setFormData({
+                                ...formData,
+                                turma_ids: formData.turma_ids.filter(id => id !== turma.id)
+                              })
+                            }
+                          }}
+                        />
+                        <Label htmlFor={`turma-${turma.id}`} className="cursor-pointer text-sm font-normal">
+                          {turma.nome} ({turma.ano} ano)
+                        </Label>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-xs text-muted-foreground">Nenhuma turma disponível</p>
+                  )}
+                </div>
+                {formData.turma_ids.length === 0 && (
+                  <p className="text-xs text-amber-600">Selecione pelo menos uma turma</p>
+                )}
+              </div>
+
               <div className="flex justify-end gap-2 pt-4">
                 <Button
                   type="button"
@@ -386,32 +391,23 @@ export default function DisciplinasPage() {
           <CardDescription>
             {'Visualize e gerencie todas as disciplinas cadastradas'}
           </CardDescription>
-          {/* Filtro por turma/ano */}
-          <div className="mt-4 flex items-center gap-2">
+          {/* Filtro por turma */}
+          <div className="mt-4 flex items-center gap-2 flex-wrap">
             <Button
-              variant={anoFiltro === 'todas' ? 'default' : 'outline'}
-              onClick={() => setAnoFiltro('todas')}
+              variant={turmaFiltro === null ? 'default' : 'outline'}
+              onClick={() => setTurmaFiltro(null)}
             >
-              Todas
+              Todas as turmas
             </Button>
-            <Button
-              variant={anoFiltro === '1' ? 'default' : 'outline'}
-              onClick={() => setAnoFiltro('1')}
-            >
-              1º ano
-            </Button>
-            <Button
-              variant={anoFiltro === '2' ? 'default' : 'outline'}
-              onClick={() => setAnoFiltro('2')}
-            >
-              2º ano
-            </Button>
-            <Button
-              variant={anoFiltro === '3' ? 'default' : 'outline'}
-              onClick={() => setAnoFiltro('3')}
-            >
-              3º ano
-            </Button>
+            {turmas.map(turma => (
+              <Button
+                key={turma.id}
+                variant={turmaFiltro === turma.id ? 'default' : 'outline'}
+                onClick={() => setTurmaFiltro(turma.id)}
+              >
+                {turma.nome} ({turma.ano})
+              </Button>
+            ))}
           </div>
         </CardHeader>
         <CardContent>

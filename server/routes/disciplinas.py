@@ -50,3 +50,7 @@ def delete_disciplina(disciplina_id: int, db: Session = Depends(get_db)):
 def read_professores_disciplina(disciplina_id: int, db: Session = Depends(get_db)):
     professores = crud.get_professores_disciplina(db, disciplina_id=disciplina_id)
     return professores
+@router.get("/{disciplina_id}/turmas/", response_model=List[schemas.TurmaDisciplina])
+def read_turmas_disciplina(disciplina_id: int, db: Session = Depends(get_db)):
+    turma_disciplinas = crud.get_turmas_disciplina(db, disciplina_id=disciplina_id)
+    return turma_disciplinas
