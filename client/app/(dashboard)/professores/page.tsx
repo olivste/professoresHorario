@@ -470,14 +470,14 @@ export default function ProfessoresPage() {
                   <div className="space-y-2">
                     <Label htmlFor="area">Área de Conhecimento</Label>
                     <Select
-                      value={formData.area_id?.toString() || ''}
-                      onValueChange={(value) => setFormData({ ...formData, area_id: value ? Number(value) : undefined })}
+                      value={formData.area_id?.toString() || 'none'}
+                      onValueChange={(value) => setFormData({ ...formData, area_id: value && value !== 'none' ? Number(value) : undefined })}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione a área" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Nenhuma</SelectItem>
+                        <SelectItem value="none">Nenhuma</SelectItem>
                         {areas.filter(a => a.ativa).map((area) => (
                           <SelectItem key={area.id} value={area.id.toString()}>
                             {area.nome}
@@ -580,14 +580,14 @@ export default function ProfessoresPage() {
               <div className="space-y-2">
                 <Label>Área de Conhecimento</Label>
                 <Select
-                  value={editing.area_id?.toString() || ''}
-                  onValueChange={(value) => setEditing({ ...editing, area_id: value ? Number(value) : undefined })}
+                  value={editing.area_id?.toString() || 'none'}
+                  onValueChange={(value) => setEditing({ ...editing, area_id: value && value !== 'none' ? Number(value) : undefined })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione a área" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Nenhuma</SelectItem>
+                    <SelectItem value="none">Nenhuma</SelectItem>
                     {areas.filter(a => a.ativa).map((area) => (
                       <SelectItem key={area.id} value={area.id.toString()}>
                         {area.nome}
