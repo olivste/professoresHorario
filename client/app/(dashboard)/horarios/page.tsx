@@ -257,6 +257,21 @@ export default function HorariosPage() {
         return
       }
 
+      // Check if professor is already teaching at this time (ANY turma)
+      const professorOcupado = horarios.find(
+        h => h.professor_id === dragData.profId && h.dia_semana === dia && h.hora_inicio === periodo.hora_inicio
+      )
+      
+      if (professorOcupado) {
+        const turmaOcupada = turmas.find(t => t.id === professorOcupado.turma_id)
+        toast({ 
+          title: 'Conflito de Horário', 
+          description: `Professor já está dando aula para ${turmaOcupada?.nome || 'outra turma'} neste horário`, 
+          variant: 'destructive' 
+        })
+        return
+      }
+
       // Check if professor has planning at this time
       const professor = professores.find(p => p.id === dragData.profId)
       const planejamento = getPlanejamentoParaSlot(professor?.area_id, dia, periodo)
@@ -400,9 +415,12 @@ export default function HorariosPage() {
       )}
 
       {selectedTurno && turmasFiltradas.length > 0 && (
-        <Tabs defaultValue={turmasFiltradas[0]?.id.toString()} className="space-y-4">
+        <Tabs defaultValue="visao-geral" className="space-y-4">
           <div className="flex items-center gap-4 overflow-x-auto">
             <TabsList>
+              <TabsTrigger value="visao-geral">
+                📊 Visão Geral
+              </TabsTrigger>
               {turmasFiltradas.map(turma => (
                 <TabsTrigger key={turma.id} value={turma.id.toString()}>
                   {turma.nome}
@@ -410,6 +428,79 @@ export default function HorariosPage() {
               ))}
             </TabsList>
           </div>
+
+          {/* Overview Tab */}
+          <TabsContent value="visao-geral">
+            <Card>
+              <CardHeader>
+                <CardTitle>Visão Geral de Todos os Horários</CardTitle>
+                <p className="text-sm text-muted-foreground">Visualização consolidada de todas as turmas do turno selecionado</p>
+              </CardHeader>
+              <CardContent className="overflow-x-auto">
+                <div className="space-y-6">
+                  {turmasFiltradas.map(turma => (
+                    <div key={turma.id} className="border rounded-lg p-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <h3 className="text-lg font-semibold">{turma.nome}</h3>
+                        <Badge variant="outline">{turma.ano}º ano</Badge>
+                      </div>
+                      <div className="overflow-x-auto">
+                        <table className="w-full border-collapse text-sm">
+                          <thead>
+                            <tr>
+                              <th className="border p-2 bg-muted w-24 text-xs font-medium">Horário</th>
+                              {DIAS_SEMANA.map(dia => (
+                                <th key={dia.value} className="border p-2 bg-muted min-w-[140px] text-xs font-medium">
+                                  {dia.label}
+                                </th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {periodosAulaFiltrados.map(periodo => (
+                              <tr key={periodo.id}>
+                                <td className="border p-2 bg-muted/50 text-xs text-center">
+                                  <div className="font-medium">{periodo.numero_aula}ª</div>
+                                  <div className="text-[10px] text-muted-foreground">
+                                    {periodo.hora_inicio.slice(0, 5)}
+                                  </div>
+                                </td>
+                                {DIAS_SEMANA.map(dia => {
+                                  const horario = getHorarioParaSlot(turma.id, dia.value, periodo)
+                                  return (
+                                    <td key={dia.value} className="border p-1 h-16">
+                                      {horario ? (
+                                        <div className="bg-primary/10 border border-primary/20 rounded p-1.5 h-full group relative">
+                                          <button
+                                            onClick={() => setDeleteId(horario.id)}
+                                            className="absolute top-0.5 right-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                                          >
+                                            <X className="h-3 w-3 text-destructive" />
+                                          </button>
+                                          <div className="text-[10px] font-medium truncate">
+                                            {horario.professor?.usuario?.nome}
+                                          </div>
+                                          <div className="text-[9px] text-muted-foreground truncate">
+                                            {horario.disciplina?.nome}
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        <div className="h-full flex items-center justify-center text-muted-foreground"></div>
+                                      )}
+                                    </td>
+                                  )
+                                })}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           {turmasFiltradas.map((turma) => (
             <TabsContent key={turma.id} value={turma.id.toString()}>
