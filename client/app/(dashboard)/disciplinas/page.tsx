@@ -60,6 +60,7 @@ export default function DisciplinasPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [deleteId, setDeleteId] = useState<number | null>(null)
+  const [editingId, setEditingId] = useState<number | null>(null)
   const { toast } = useToast()
 
   const [turmaFiltro, setTurmaFiltro] = useState<number | null>(null)
@@ -129,23 +130,46 @@ export default function DisciplinasPage() {
     setIsSaving(true)
 
     try {
-      await apiClient.post('/disciplinas/', formData)
-      toast({
-        title: 'Sucesso',
-        description: 'Disciplina criada com sucesso',
-      })
+      if (editingId) {
+        await apiClient.put(`/disciplinas/${editingId}/`, formData)
+        toast({
+          title: 'Sucesso',
+          description: 'Disciplina atualizada com sucesso',
+        })
+      } else {
+        await apiClient.post('/disciplinas/', formData)
+        toast({
+          title: 'Sucesso',
+          description: 'Disciplina criada com sucesso',
+        })
+      }
       setIsDialogOpen(false)
       resetForm()
       loadDisciplinas()
+      loadDisciplinasTurmas()
     } catch (error) {
       toast({
         title: 'Erro',
-        description: 'Erro ao criar disciplina',
+        description: editingId ? 'Erro ao atualizar disciplina' : 'Erro ao criar disciplina',
         variant: 'destructive',
       })
     } finally {
       setIsSaving(false)
     }
+  }
+
+  async function handleEdit(disciplina: Disciplina) {
+    setEditingId(disciplina.id)
+    const turmasAssociadas = disciplinasTurmas.get(disciplina.id) || []
+    setFormData({
+      nome: disciplina.nome,
+      codigo: disciplina.codigo || '',
+      carga_horaria_semanal: disciplina.carga_horaria_semanal,
+      descricao: disciplina.descricao || '',
+      ativa: disciplina.ativa,
+      turma_ids: turmasAssociadas,
+    })
+    setIsDialogOpen(true)
   }
 
   async function handleDelete(id: number) {
@@ -168,6 +192,7 @@ export default function DisciplinasPage() {
   }
 
   function resetForm() {
+    setEditingId(null)
     setFormData({
       nome: '',
       codigo: '',
@@ -180,44 +205,27 @@ export default function DisciplinasPage() {
 
   const columns: ColumnDef<Disciplina>[] = [
     {
-      accessorKey: 'codigo',
-      header: 'Código',
-      meta: { className: 'w-32 whitespace-nowrap' },
-    },
-    {
       accessorKey: 'nome',
       header: 'Nome',
-      meta: { className: 'w-[36%] truncate' },
+      meta: { className: 'w-[70%] truncate' },
     },
     {
       accessorKey: 'carga_horaria_semanal',
       header: 'Carga Horária',
-      meta: { className: 'w-32 whitespace-nowrap' },
+      meta: { className: 'w-[20%] whitespace-nowrap' },
       cell: ({ row }) => `${row.original.carga_horaria_semanal}h/sem`,
-    },
-    {
-      accessorKey: 'descricao',
-      header: 'Descrição',
-      meta: { className: 'w-[30%] truncate' },
-      cell: ({ row }) => row.original.descricao || '-',
-    },
-    {
-      accessorKey: 'ativa',
-      header: 'Status',
-      meta: { className: 'w-24 whitespace-nowrap' },
-      cell: ({ row }) => (
-        <Badge variant={row.original.ativa ? 'default' : 'secondary'}>
-          {row.original.ativa ? 'Ativa' : 'Inativa'}
-        </Badge>
-      ),
     },
     {
       id: 'actions',
       header: 'Ações',
-      meta: { className: 'w-24 whitespace-nowrap' },
+      meta: { className: 'w-[10%] whitespace-nowrap' },
       cell: ({ row }) => (
         <div className="flex gap-2">
-          <Button variant="ghost" size="icon" disabled>
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={() => handleEdit(row.original)}
+          >
             <Pencil className="h-4 w-4" />
           </Button>
           <Button
@@ -247,7 +255,10 @@ export default function DisciplinasPage() {
             {'Gerencie as disciplinas oferecidas pela instituição'}
           </p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={(open) => {
+          setIsDialogOpen(open)
+          if (!open) resetForm()
+        }}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="h-4 w-4 mr-2" />
@@ -256,9 +267,9 @@ export default function DisciplinasPage() {
           </DialogTrigger>
           <DialogContent className="max-w-xl">
             <DialogHeader>
-              <DialogTitle>Cadastrar Disciplina</DialogTitle>
+              <DialogTitle>{editingId ? 'Editar Disciplina' : 'Cadastrar Disciplina'}</DialogTitle>
               <DialogDescription>
-                {'Preencha os dados da nova disciplina'}
+                {editingId ? 'Atualize os dados da disciplina' : 'Preencha os dados da nova disciplina'}
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -373,10 +384,10 @@ export default function DisciplinasPage() {
                   {isSaving ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Salvando...
+                      {editingId ? 'Atualizando...' : 'Salvando...'}
                     </>
                   ) : (
-                    'Salvar'
+                    editingId ? 'Atualizar' : 'Salvar'
                   )}
                 </Button>
               </div>

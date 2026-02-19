@@ -174,10 +174,28 @@ def create_disciplina(db: Session, disciplina: schemas.DisciplinaCreate):
 def update_disciplina(db: Session, disciplina_id: int, disciplina: schemas.DisciplinaUpdate):
     db_disciplina = db.query(models.Disciplina).filter(models.Disciplina.id == disciplina_id).first()
     if db_disciplina:
-        update_data = disciplina.model_dump(exclude_unset=True)
+        # Atualizar os campos da disciplina, exceto turma_ids
+        update_data = disciplina.model_dump(exclude_unset=True, exclude={'turma_ids'})
         for field, value in update_data.items():
             setattr(db_disciplina, field, value)
         db.commit()
+        
+        # Atualizar associações com turmas se fornecidas
+        if disciplina.turma_ids is not None:
+            # Remover associações antigas
+            db.query(models.TurmaDisciplina).filter(
+                models.TurmaDisciplina.disciplina_id == disciplina_id
+            ).delete()
+            
+            # Criar novas associações
+            for turma_id in disciplina.turma_ids:
+                turma_disciplina = models.TurmaDisciplina(
+                    turma_id=turma_id,
+                    disciplina_id=disciplina_id
+                )
+                db.add(turma_disciplina)
+            db.commit()
+        
         db.refresh(db_disciplina)
     return db_disciplina
 

@@ -198,6 +198,7 @@ class DisciplinaUpdate(BaseModel):
     carga_horaria_semanal: Optional[int] = None
     descricao: Optional[str] = None
     ativa: Optional[bool] = None
+    turma_ids: Optional[List[int]] = None
 
 class Disciplina(DisciplinaBase):
     id: int
