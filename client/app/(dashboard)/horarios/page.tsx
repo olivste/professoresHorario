@@ -1,18 +1,13 @@
 'use client'
 
-import React from "react"
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Label } from '@/components/ui/label'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Textarea } from '@/components/ui/textarea'
 import { apiClient } from '@/lib/api-client'
-import { DataTable } from '@/components/data-table'
-import { Plus, Loader2, Trash2 } from 'lucide-react'
+import { Loader2, X, Plus } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-import type { ColumnDef } from '@tanstack/react-table'
+import { Badge } from '@/components/ui/badge'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,13 +27,13 @@ interface Professor {
 interface Disciplina {
   id: number
   nome: string
-  codigo: string
 }
 
 interface Turma {
   id: number
   nome: string
   turno_id: number
+  ano: string
 }
 
 interface Turno {
@@ -52,7 +47,7 @@ interface PeriodoAula {
   numero_aula: number
   hora_inicio: string
   hora_fim: string
-  tipo: 'AULA' | 'INTERVALO' | 'ALMOCO'
+  tipo: 'AULA' | 'INTERVALO' | 'ALMOCO' | 'RECREIO'
   descricao?: string
 }
 
@@ -65,21 +60,25 @@ interface Horario {
   turma_id: number
   turma?: Turma
   turno_id: number
-  turno?: Turno
   dia_semana: string
   hora_inicio: string
   hora_fim: string
-  sala: string
   observacoes?: string
 }
 
-const diasSemana = [
-  { value: 'segunda', label: 'Segunda-feira' },
-  { value: 'terca', label: 'Terça-feira' },
-  { value: 'quarta', label: 'Quarta-feira' },
-  { value: 'quinta', label: 'Quinta-feira' },
-  { value: 'sexta', label: 'Sexta-feira' },
-  { value: 'sabado', label: 'Sábado' },
+interface ProfessorDisciplina {
+  professor_id: number
+  disciplina_id: number
+  professor: Professor
+  disciplina: Disciplina
+}
+
+const DIAS_SEMANA = [
+  { value: 'segunda', label: 'SEG' },
+  { value: 'terca', label: 'TER' },
+  { value: 'quarta', label: 'QUA' },
+  { value: 'quinta', label: 'QUI' },
+  { value: 'sexta', label: 'SEX' },
 ]
 
 export default function HorariosPage() {
@@ -89,25 +88,16 @@ export default function HorariosPage() {
   const [turmas, setTurmas] = useState<Turma[]>([])
   const [turnos, setTurnos] = useState<Turno[]>([])
   const [periodos, setPeriodos] = useState<PeriodoAula[]>([])
-  const [profDiscLinks, setProfDiscLinks] = useState<Array<{ professor_id: number; disciplina_id: number }>>([])
+  const [profDiscLinks, setProfDiscLinks] = useState<ProfessorDisciplina[]>([])
   const [turmaDiscLinks, setTurmaDiscLinks] = useState<Array<{ turma_id: number; disciplina_id: number }>>([])
+  
   const [isLoading, setIsLoading] = useState(true)
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [isSaving, setIsSaving] = useState(false)
+  const [selectedTurma, setSelectedTurma] = useState<string>('')
+  const [selectedTurno, setSelectedTurno] = useState<string>('')
+  const [dragData, setDragData] = useState<{ profId: number; discId: number } | null>(null)
   const [deleteId, setDeleteId] = useState<number | null>(null)
-  const [selectedPeriodoId, setSelectedPeriodoId] = useState<string>('')
+  
   const { toast } = useToast()
-
-  const [formData, setFormData] = useState({
-    professor_id: '',
-    disciplina_id: '',
-    turma_id: '',
-    turno_id: '',
-    dia_semana: '',
-    hora_inicio: '',
-    hora_fim: '',
-    observacoes: '',
-  })
 
   useEffect(() => {
     loadData()
@@ -115,24 +105,34 @@ export default function HorariosPage() {
 
   async function loadData() {
     try {
-      const [horariosData, professoresData, disciplinasData, turmasData, turnosData, periodosData, linksData, turmaLinksData] = await Promise.all([
+      const [
+        horariosData,
+        professoresData,
+        disciplinasData,
+        turmasData,
+        turnosData,
+        periodosData,
+        linksData,
+        turmaLinksData
+      ] = await Promise.all([
         apiClient.get<Horario[]>('/horarios/?limit=1000'),
         apiClient.get<Professor[]>('/professores/?limit=1000'),
         apiClient.get<Disciplina[]>('/disciplinas/?limit=1000'),
         apiClient.get<Turma[]>('/turmas/?limit=1000'),
         apiClient.get<Turno[]>('/turnos/?limit=1000'),
         apiClient.get<PeriodoAula[]>('/periodos-aula/?limit=1000'),
-        apiClient.get<any[]>('/professor-disciplinas/'),
-        apiClient.get<any[]>('/turma-disciplinas/'),
+        apiClient.get<any[]>('/professor-disciplinas/?limit=1000'),
+        apiClient.get<any[]>('/turma-disciplinas/?limit=1000'),
       ])
+      
       setHorarios(horariosData)
       setProfessores(professoresData)
       setDisciplinas(disciplinasData)
       setTurmas(turmasData)
       setTurnos(turnosData)
       setPeriodos(periodosData)
-      setProfDiscLinks(linksData.map((l: any) => ({ professor_id: l.professor_id, disciplina_id: l.disciplina_id })))
-      setTurmaDiscLinks(turmaLinksData.map((l: any) => ({ turma_id: l.turma_id, disciplina_id: l.disciplina_id })))
+      setProfDiscLinks(linksData)
+      setTurmaDiscLinks(turmaLinksData)
     } catch (error) {
       toast({ title: 'Erro', description: 'Erro ao carregar dados', variant: 'destructive' })
     } finally {
@@ -140,118 +140,94 @@ export default function HorariosPage() {
     }
   }
 
+  // Auto-select first turma when turno changes
   useEffect(() => {
-    const id = Number(selectedPeriodoId)
-    const periodo = periodos.find((p) => p.id === id)
-    if (periodo) {
-      setFormData((prev) => ({ ...prev, hora_inicio: periodo.hora_inicio, hora_fim: periodo.hora_fim }))
-    }
-  }, [selectedPeriodoId, periodos])
-
-  useEffect(() => {
-    setSelectedPeriodoId('')
-    setFormData((prev) => ({ ...prev, turma_id: '' }))
-  }, [formData.turno_id])
-
-  useEffect(() => {
-    setFormData((prev) => ({ ...prev, disciplina_id: '' }))
-  }, [formData.turma_id])
-
-  useEffect(() => {
-    const discId = Number(formData.disciplina_id)
-    if (!discId) return
-    const profsDaDisc = profDiscLinks.filter((l) => l.disciplina_id === discId).map((l) => l.professor_id)
-    const unique = Array.from(new Set(profsDaDisc))
-    if (formData.professor_id && !unique.includes(Number(formData.professor_id))) {
-      setFormData((prev) => ({ ...prev, professor_id: '' }))
-    }
-    if (!formData.professor_id && unique.length === 1) {
-      setFormData((prev) => ({ ...prev, professor_id: unique[0].toString() }))
-    }
-  }, [formData.disciplina_id, profDiscLinks])
-
-  const periodosFiltrados = periodos.filter((p) => p.turno_id === Number(formData.turno_id) && p.tipo === 'AULA')
-
-  const professoresFiltrados = (() => {
-    const discId = Number(formData.disciplina_id)
-    if (!discId || profDiscLinks.length === 0) return professores
-    const allowedProfIds = new Set(profDiscLinks.filter((l) => l.disciplina_id === discId).map((l) => l.professor_id))
-    const result = professores.filter((p) => allowedProfIds.has(p.id))
-    return result.length > 0 ? result : professores
-  })()
-
-  const turmasFiltradas = (() => {
-    const turnoId = Number(formData.turno_id)
-    if (!turnoId) return []
-    const profId = Number(formData.professor_id)
-    const discId = Number(formData.disciplina_id)
-
-    const turmaParaDiscs = new Map<number, Set<number>>()
-    for (const l of turmaDiscLinks) {
-      const set = turmaParaDiscs.get(l.turma_id) || new Set<number>()
-      set.add(l.disciplina_id)
-      turmaParaDiscs.set(l.turma_id, set)
-    }
-
-    const discsPorProf = profId ? new Set(profDiscLinks.filter((l) => l.professor_id === profId).map((l) => l.disciplina_id)) : null
-    const exigeDiscEspecifica = !!discId
-
-    return turmas.filter((t) => {
-      if (t.turno_id !== turnoId) return false
-      const discs = turmaParaDiscs.get(t.id)
-      if (!discs || discs.size === 0) return false
-      if (exigeDiscEspecifica) {
-        if (!discs.has(discId)) return false
-        if (discsPorProf && !discsPorProf.has(discId)) return false
-        return true
+    if (selectedTurno) {
+      const turmasFiltradas = turmas.filter(t => t.turno_id === Number(selectedTurno))
+      if (turmasFiltradas.length > 0) {
+        setSelectedTurma(turmasFiltradas[0].id.toString())
       }
-      if (discsPorProf) {
-        for (const d of discsPorProf) if (discs.has(d)) return true
-        return false
-      }
-      return true
-    })
-  })()
+    }
+  }, [selectedTurno, turmas])
 
-  const disciplinasFiltradas = (() => {
-    const profId = Number(formData.professor_id)
-    const turmaId = Number(formData.turma_id)
-    const allowedByProf = profId ? new Set(profDiscLinks.filter((l) => l.professor_id === profId).map((l) => l.disciplina_id)) : null
-    const allowedByTurma = turmaId ? new Set(turmaDiscLinks.filter((l) => l.turma_id === turmaId).map((l) => l.disciplina_id)) : null
-    return disciplinas.filter((d) => {
-      if (allowedByProf && !allowedByProf.has(d.id)) return false
-      if (allowedByTurma && !allowedByTurma.has(d.id)) return false
-      return true
-    })
-  })()
+  const turmaAtual = turmas.find(t => t.id === Number(selectedTurma))
+  
+  const periodosAulaFiltrados = useMemo(() => {
+    if (!selectedTurno) return []
+    return periodos
+      .filter(p => p.turno_id === Number(selectedTurno) && p.tipo === 'AULA')
+      .sort((a, b) => a.numero_aula - b.numero_aula)
+  }, [periodos, selectedTurno])
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setIsSaving(true)
+  const turmasFiltradas = useMemo(() => {
+    if (!selectedTurno) return []
+    return turmas.filter(t => t.turno_id === Number(selectedTurno))
+  }, [turmas, selectedTurno])
+
+  // Get professor-disciplina combinations available for selected turma
+  const profDiscDisponiveis = useMemo(() => {
+    if (!selectedTurma) return []
+    
+    const turmaId = Number(selectedTurma)
+    const disciplinasDaTurma = new Set(
+      turmaDiscLinks.filter(l => l.turma_id === turmaId).map(l => l.disciplina_id)
+    )
+    
+    return profDiscLinks.filter(pd => disciplinasDaTurma.has(pd.disciplina_id))
+  }, [selectedTurma, profDiscLinks, turmaDiscLinks])
+
+  const horariosFiltrados = useMemo(() => {
+    if (!selectedTurma) return []
+    return horarios.filter(h => h.turma_id === Number(selectedTurma))
+  }, [horarios, selectedTurma])
+
+  function handleDragStart(profId: number, discId: number) {
+    setDragData({ profId, discId })
+  }
+
+  function handleDragEnd() {
+    setDragData(null)
+  }
+
+  async function handleDrop(dia: string, periodo: PeriodoAula) {
+    if (!dragData || !selectedTurma || !selectedTurno) return
+
     try {
-      if (!selectedPeriodoId) throw new Error('Selecione um período de aula')
-      const profId = Number(formData.professor_id)
-      const discId = Number(formData.disciplina_id)
-      const turmaId = Number(formData.turma_id)
-      const hasProfDisc = profDiscLinks.some((l) => l.professor_id === profId && l.disciplina_id === discId)
-      const hasTurmaDisc = turmaDiscLinks.some((l) => l.turma_id === turmaId && l.disciplina_id === discId)
-      if (!hasProfDisc) throw new Error('Professor não vinculado à disciplina selecionada')
-      if (!hasTurmaDisc) throw new Error('Disciplina não está vinculada à turma selecionada')
+      // Check if slot already has a horario
+      const existente = horariosFiltrados.find(
+        h => h.dia_semana === dia && h.hora_inicio === periodo.hora_inicio
+      )
+      
+      if (existente) {
+        toast({ 
+          title: 'Atenção', 
+          description: 'Já existe um horário neste período', 
+          variant: 'destructive' 
+        })
+        return
+      }
+
       await apiClient.post('/horarios/', {
-        ...formData,
-        professor_id: Number(formData.professor_id),
-        disciplina_id: Number(formData.disciplina_id),
-        turma_id: Number(formData.turma_id),
-        turno_id: Number(formData.turno_id),
+        professor_id: dragData.profId,
+        disciplina_id: dragData.discId,
+        turma_id: Number(selectedTurma),
+        turno_id: Number(selectedTurno),
+        dia_semana: dia,
+        hora_inicio: periodo.hora_inicio,
+        hora_fim: periodo.hora_fim,
+        observacoes: '',
       })
+
       toast({ title: 'Sucesso', description: 'Horário criado com sucesso' })
-      setIsDialogOpen(false)
-      resetForm()
       loadData()
     } catch (error: any) {
-      toast({ title: 'Erro', description: error?.message || 'Erro ao criar horário', variant: 'destructive' })
+      toast({ 
+        title: 'Erro', 
+        description: error?.response?.data?.detail || 'Erro ao criar horário', 
+        variant: 'destructive' 
+      })
     } finally {
-      setIsSaving(false)
+      setDragData(null)
     }
   }
 
@@ -267,231 +243,200 @@ export default function HorariosPage() {
     }
   }
 
-  function resetForm() {
-    setFormData({
-      professor_id: '',
-      disciplina_id: '',
-      turma_id: '',
-      turno_id: '',
-      dia_semana: '',
-      hora_inicio: '',
-      hora_fim: '',
-      observacoes: '',
-    })
+  function getHorarioParaSlot(dia: string, periodo: PeriodoAula): Horario | undefined {
+    return horariosFiltrados.find(
+      h => h.dia_semana === dia && h.hora_inicio === periodo.hora_inicio
+    )
   }
 
-  const columns: ColumnDef<Horario>[] = [
-    {
-      accessorKey: 'dia_semana',
-      header: 'Dia',
-      cell: ({ row }) => {
-        const dia = diasSemana.find((d) => d.value === row.original.dia_semana)
-        return dia?.label || row.original.dia_semana
-      },
-    },
-    { accessorKey: 'hora_inicio', header: 'Início' },
-    { accessorKey: 'hora_fim', header: 'Fim' },
-    {
-      accessorKey: 'professor.usuario.nome',
-      header: 'Professor',
-      cell: ({ row }) => row.original.professor?.usuario?.nome || '-',
-    },
-    {
-      accessorKey: 'disciplina.nome',
-      header: 'Disciplina',
-      cell: ({ row }) => row.original.disciplina?.nome || '-',
-    },
-    { accessorKey: 'turma.nome', header: 'Turma', cell: ({ row }) => row.original.turma?.nome || '-' },
-    { accessorKey: 'turno.nome', header: 'Turno', cell: ({ row }) => row.original.turno?.nome || '-' },
-    { accessorKey: 'sala', header: 'Sala' },
-    {
-      id: 'actions',
-      header: 'Ações',
-      cell: ({ row }) => (
-        <Button variant="ghost" size="icon" onClick={() => setDeleteId(row.original.id)}>
-          <Trash2 className="h-4 w-4 text-destructive" />
-        </Button>
-      ),
-    },
-  ]
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Horários</h1>
-          <p className="text-muted-foreground mt-2">{'Gerencie os horários de aula'}</p>
-        </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Novo Horário
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Cadastrar Horário</DialogTitle>
-              <DialogDescription>{'Preencha os dados do novo horário de aula'}</DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="professor">Professor*</Label>
-                  <Select value={formData.professor_id} onValueChange={(value) => setFormData({ ...formData, professor_id: value, disciplina_id: '', turma_id: '' })} required>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione um professor" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {professoresFiltrados.map((prof) => (
-                        <SelectItem key={prof.id} value={prof.id.toString()}>
-                          {prof.usuario?.nome}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="disciplina">Disciplina*</Label>
-                  <Select value={formData.disciplina_id} onValueChange={(value) => setFormData({ ...formData, disciplina_id: value })} required>
-                    <SelectTrigger>
-                      <SelectValue placeholder={'Selecione uma disciplina'} />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-64 overflow-y-auto">
-                      {disciplinasFiltradas.length === 0 ? (
-                        <SelectItem value="__empty" disabled>
-                          Nenhuma disciplina vinculada
-                        </SelectItem>
-                      ) : (
-                        disciplinasFiltradas.map((disc) => (
-                          <SelectItem key={disc.id} value={disc.id.toString()}>
-                            {disc.codigo ? `${disc.codigo} - ${disc.nome}` : disc.nome}
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="turma">Turma*</Label>
-                  <Select value={formData.turma_id} onValueChange={(value) => setFormData({ ...formData, turma_id: value })} required disabled={!formData.turno_id}>
-                    <SelectTrigger>
-                      <SelectValue placeholder={!formData.turno_id ? 'Selecione o turno primeiro' : 'Selecione uma turma'} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {turmasFiltradas.length === 0 ? (
-                        <SelectItem value="__empty" disabled>
-                          Nenhuma turma disponível para os filtros atuais
-                        </SelectItem>
-                      ) : (
-                        turmasFiltradas.map((turma) => (
-                          <SelectItem key={turma.id} value={turma.id.toString()}>
-                            {turma.nome}
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="turno">Turno*</Label>
-                  <Select value={formData.turno_id} onValueChange={(value) => setFormData({ ...formData, turno_id: value })} required>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione um turno" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {turnos.map((turno) => (
-                        <SelectItem key={turno.id} value={turno.id.toString()}>
-                          {turno.nome}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="dia_semana">Dia da Semana*</Label>
-                  <Select value={formData.dia_semana} onValueChange={(value) => setFormData({ ...formData, dia_semana: value })} required>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione um dia" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {diasSemana.map((dia) => (
-                        <SelectItem key={dia.value} value={dia.value}>
-                          {dia.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="periodo-select">Período de Aula*</Label>
-                  <Select value={selectedPeriodoId} onValueChange={(value) => setSelectedPeriodoId(value)} disabled={!formData.turno_id || periodosFiltrados.length === 0}>
-                    <SelectTrigger id="periodo-select">
-                      <SelectValue placeholder={!formData.turno_id ? 'Selecione o turno primeiro' : periodosFiltrados.length === 0 ? 'Nenhum período de aula disponível' : 'Selecione um período'} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {periodosFiltrados.map((p) => (
-                        <SelectItem key={p.id} value={p.id.toString()}>
-                          {p.numero_aula}ª aula • {p.hora_inicio} — {p.hora_fim}
-                          {p.descricao ? ` • ${p.descricao}` : ''}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="observacoes">Observações</Label>
-                <Textarea id="observacoes" placeholder="Observações adicionais..." value={formData.observacoes} onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })} />
-              </div>
-
-              <div className="flex justify-end gap-2 pt-4">
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} disabled={isSaving}>
-                  Cancelar
-                </Button>
-                <Button type="submit" disabled={isSaving}>
-                  {isSaving ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Salvando...
-                    </>
-                  ) : (
-                    'Salvar'
-                  )}
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Grade de Horários</h1>
+        <p className="text-muted-foreground mt-2">
+          Arraste professores e disciplinas para os horários desejados
+        </p>
       </div>
 
+      {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle>Grade de Horários</CardTitle>
-          <CardDescription>{'Visualize e gerencie todos os horários cadastrados'}</CardDescription>
+          <CardTitle>Filtros</CardTitle>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Turno</label>
+              <Select value={selectedTurno} onValueChange={setSelectedTurno}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o turno" />
+                </SelectTrigger>
+                <SelectContent>
+                  {turnos.map(t => (
+                    <SelectItem key={t.id} value={t.id.toString()}>
+                      {t.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          ) : (
-            <DataTable columns={columns} data={horarios} />
-          )}
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Turma</label>
+              <Select value={selectedTurma} onValueChange={setSelectedTurma} disabled={!selectedTurno}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a turma" />
+                </SelectTrigger>
+                <SelectContent>
+                  {turmasFiltradas.map(t => (
+                    <SelectItem key={t.id} value={t.id.toString()}>
+                      {t.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </CardContent>
       </Card>
+
+      {selectedTurma && turmaAtual && (
+        <div className="grid grid-cols-[300px_1fr] gap-6">
+          {/* Sidebar - Available Items */}
+          <Card className="h-fit sticky top-4">
+            <CardHeader>
+              <CardTitle className="text-lg">Disponíveis</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Arraste para a grade
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-2 max-h-[600px] overflow-y-auto">
+              {profDiscDisponiveis.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Nenhuma combinação disponível para esta turma
+                </p>
+              ) : (
+                profDiscDisponiveis.map((pd) => (
+                  <div
+                    key={`${pd.professor_id}-${pd.disciplina_id}`}
+                    draggable
+                    onDragStart={() => handleDragStart(pd.professor_id, pd.disciplina_id)}
+                    onDragEnd={handleDragEnd}
+                    className="p-3 bg-card border rounded-lg cursor-move hover:bg-accent transition-colors"
+                  >
+                    <div className="font-medium text-sm truncate">
+                      {pd.professor?.usuario?.nome || 'Professor'}
+                    </div>
+                    <div className="text-xs text-muted-foreground truncate mt-1">
+                      {pd.disciplina?.nome || 'Disciplina'}
+                    </div>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Main Grid */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>{turmaAtual.nome}</CardTitle>
+                <Badge>{turmaAtual.ano} ano</Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="overflow-x-auto">
+              <div className="inline-block min-w-full">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr>
+                      <th className="border p-2 bg-muted w-32 text-sm font-medium">
+                        Horário
+                      </th>
+                      {DIAS_SEMANA.map(dia => (
+                        <th key={dia.value} className="border p-2 bg-muted min-w-[160px] text-sm font-medium">
+                          {dia.label}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {periodosAulaFiltrados.map(periodo => (
+                      <tr key={periodo.id}>
+                        <td className="border p-2 bg-muted/50 text-xs text-center">
+                          <div className="font-medium">{periodo.numero_aula}ª aula</div>
+                          <div className="text-muted-foreground mt-1">
+                            {periodo.hora_inicio.slice(0, 5)} - {periodo.hora_fim.slice(0, 5)}
+                          </div>
+                        </td>
+                        {DIAS_SEMANA.map(dia => {
+                          const horario = getHorarioParaSlot(dia.value, periodo)
+                          return (
+                            <td
+                              key={dia.value}
+                              className="border p-1 relative h-20"
+                              onDragOver={(e) => e.preventDefault()}
+                              onDrop={() => handleDrop(dia.value, periodo)}
+                            >
+                              {horario ? (
+                                <div className="bg-primary/10 border border-primary/20 rounded p-2 h-full flex flex-col justify-between group relative">
+                                  <button
+                                    onClick={() => setDeleteId(horario.id)}
+                                    className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  >
+                                    <X className="h-3 w-3 text-destructive" />
+                                  </button>
+                                  <div>
+                                    <div className="font-medium text-xs truncate">
+                                      {horario.professor?.usuario?.nome}
+                                    </div>
+                                    <div className="text-[10px] text-muted-foreground truncate">
+                                      {horario.disciplina?.nome}
+                                    </div>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="h-full flex items-center justify-center text-muted-foreground">
+                                  <Plus className="h-4 w-4 opacity-0 hover:opacity-100 transition-opacity" />
+                                </div>
+                              )}
+                            </td>
+                          )
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {!selectedTurma && (
+        <Card>
+          <CardContent className="flex items-center justify-center h-64">
+            <p className="text-muted-foreground">
+              Selecione um turno e uma turma para começar
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       <AlertDialog open={deleteId !== null} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-            <AlertDialogDescription>{'Tem certeza que deseja excluir este horário? Esta ação não pode ser desfeita.'}</AlertDialogDescription>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir este horário? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
