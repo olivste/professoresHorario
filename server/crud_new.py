@@ -242,7 +242,8 @@ def get_turma_disciplinas_por_turma(db: Session, turma_id: int):
 
 def get_turmas_disciplina(db: Session, disciplina_id: int):
     return db.query(models.TurmaDisciplina).filter(models.TurmaDisciplina.disciplina_id == disciplina_id).all()
-
+def get_turmas_disciplina(db: Session, disciplina_id: int):
+    return db.query(models.TurmaDisciplina).filter(models.TurmaDisciplina.disciplina_id == disciplina_id).all()
 def delete_turma_disciplina(db: Session, link_id: int):
     link = db.query(models.TurmaDisciplina).filter(models.TurmaDisciplina.id == link_id).first()
     if link:

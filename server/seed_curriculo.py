@@ -329,12 +329,42 @@ def run():
             d = ensure_disciplina(db, nome)
             print(f"Disciplina garantida: {d.nome} (id={d.id})")
 
-        # Criar turmas por trilha
+        # Criar turmas por trilha e associar disciplinas
+        disciplinas_cache = {d.nome: d for d in db.query(models.Disciplina).all()}
+        
         for trilha, conf in CURRICULOS.items():
             turno = turnos_cache[conf["turno"]]
             nome_turma = f"{conf['ano']} - {conf['curso']}"
             turma = ensure_turma(db, nome_turma, conf["ano"], turno.id, conf["curso"])
             print(f"Turma garantida: {turma.nome} (turno={turno.nome})")
+            
+            # Associar disciplinas à turma via TurmaDisciplina
+            for nome_disciplina, carga_horaria in conf["disciplinas"].items():
+                disciplina = disciplinas_cache.get(nome_disciplina)
+                if not disciplina:
+                    print(f"  AVISO: Disciplina '{nome_disciplina}' não encontrada")
+                    continue
+                
+                # Atualizar carga horária da disciplina se diferente
+                if disciplina.carga_horaria_semanal != carga_horaria:
+                    disciplina.carga_horaria_semanal = carga_horaria
+                    db.commit()
+                
+                # Verificar se já existe a associação
+                existing_link = db.query(models.TurmaDisciplina).filter(
+                    models.TurmaDisciplina.turma_id == turma.id,
+                    models.TurmaDisciplina.disciplina_id == disciplina.id
+                ).first()
+                
+                if not existing_link:
+                    link = models.TurmaDisciplina(
+                        turma_id=turma.id,
+                        disciplina_id=disciplina.id
+                    )
+                    db.add(link)
+                    print(f"  → Associada: {nome_disciplina} ({carga_horaria}h/sem)")
+            
+            db.commit()
 
         # -----------------------------
         # Periodos de aula por turno
