@@ -217,7 +217,7 @@ export default function HorariosPage() {
 
   function getHorarioParaSlot(turmaId: number, dia: string, periodo: PeriodoAula): Horario | undefined {
     return horarios.find(
-      h => h.turma_id === turmaId && h.dia_semana === dia && h.hora_inicio === periodo.hora_inicio
+      h => h.turma_id === turmaId && h.dia_semana === dia && h.hora_inicio.slice(0, 5) === periodo.hora_inicio.slice(0, 5)
     )
   }
 
@@ -245,7 +245,7 @@ export default function HorariosPage() {
     try {
       // Check if slot already has a horario
       const existente = horarios.find(
-        h => h.turma_id === turmaId && h.dia_semana === dia && h.hora_inicio === periodo.hora_inicio
+        h => h.turma_id === turmaId && h.dia_semana === dia && h.hora_inicio.slice(0, 5) === periodo.hora_inicio.slice(0, 5)
       )
       
       if (existente) {
@@ -259,7 +259,7 @@ export default function HorariosPage() {
 
       // Check if professor is already teaching at this time (ANY turma)
       const professorOcupado = horarios.find(
-        h => h.professor_id === dragData.profId && h.dia_semana === dia && h.hora_inicio === periodo.hora_inicio
+        h => h.professor_id === dragData.profId && h.dia_semana === dia && h.hora_inicio.slice(0, 5) === periodo.hora_inicio.slice(0, 5)
       )
       
       if (professorOcupado) {
